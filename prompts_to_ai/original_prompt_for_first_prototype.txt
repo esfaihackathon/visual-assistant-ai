@@ -1,0 +1,410 @@
+# Build Prompt for Android MVP – “Saral”
+*A Voice-First Banking Accessibility Layer for Visually Impaired Users in India*
+---
+## Product Vision
+Build an Android MVP application named **“Saral”** that acts as a **voice-assisted accessibility layer for banking applications**, specifically designed for:
+* Fully visually impaired users
+* Partially visually impaired users
+* Elderly users with accessibility needs
+* Users uncomfortable with traditional banking UI navigation
+The product should demonstrate how existing Indian banking applications can integrate a lightweight accessibility-first module to provide inclusive banking experiences.
+The MVP should focus on:
+* Voice-first interactions
+* Minimal touch interactions
+* Accessibility-compliant navigation
+* RBI-aligned secure design principles
+* Mock banking workflows for hackathon demonstration
+The application must feel realistic, polished, production-inspired, and emotionally reassuring.
+---
+# Core Product Concept
+Saral is NOT a standalone bank.
+It is an:
+* Accessibility SDK / feature layer
+* Voice-guided banking assistant
+* Banking accessibility framework
+that can be integrated into existing Indian banking apps like:
+* State Bank of India
+* HDFC Bank
+* ICICI Bank
+* Axis Bank
+The MVP will simulate banking operations using mocked APIs and local stateless data.
+---
+# Primary Goal of MVP
+Demonstrate an accessibility-first banking experience where a visually impaired user can:
+1. Open app
+2. Authenticate using fingerprint biometric
+3. Hear voice greeting
+4. Navigate completely using voice
+5. Check balance
+6. Transfer money
+7. Request cheque book
+8. Hear confirmations clearly
+9. Operate with minimal visual dependency
+---
+# Target Audience
+## Primary Users
+* Blind users
+* Low vision users
+* Elderly users
+## Secondary Users
+* Banks wanting accessibility compliance
+* Financial inclusion initiatives
+* RBI accessibility-driven banking innovation programs
+---
+# Key MVP Principles
+## 1. Voice First
+Every major action should:
+* Speak aloud
+* Accept voice input
+* Give audio confirmations
+## 2. Accessibility First
+Use:
+* Android TalkBack compatibility
+* Large typography
+* High contrast mode
+* Minimal screen clutter
+* Large tappable areas
+* Haptic feedback
+## 3. Security Aware
+Even though backend is mocked:
+* Never read full account numbers aloud
+* Never speak sensitive authentication data
+* Require confirmation before transfers
+* Simulate RBI-compliant UX practices
+## 4. Stateless Architecture
+No real banking integration.
+Use:
+* Mock JSON data
+* Local in-memory session
+* No persistent sensitive storage
+---
+# Tech Stack
+## Android
+* Kotlin
+* Jetpack Compose
+* MVVM Architecture
+## Voice
+* Android SpeechRecognizer
+* Android TextToSpeech (TTS)
+## Authentication
+* Android BiometricPrompt API
+* Fingerprint authentication
+## State Management
+* ViewModel + StateFlow
+## Dependency Injection
+* Hilt (optional but preferred)
+## Navigation
+* Jetpack Navigation Compose
+---
+# Application Flow
+# 1. Splash Screen
+### Behavior
+* App logo appears
+* Voice speaks:
+> “Welcome to Saral. Your accessible banking assistant.”
+### UI
+* Minimal clean screen
+* High contrast
+* Large logo
+---
+# 2. Biometric Authentication Screen
+### Flow
+* Prompt fingerprint authentication immediately
+### Voice
+> “Please authenticate using your fingerprint.”
+### On Success
+Voice says:
+> “Authentication successful. Welcome Jayesh.”
+Then:
+> “You can now say commands like check balance, transfer money, or request cheque book.”
+### On Failure
+> “Authentication failed. Please try again.”
+---
+# 3. Home Voice Assistant Screen
+This is the main conversational screen.
+## UI Components
+* Large microphone button
+* Listening animation
+* Large text showing detected speech
+* Voice response card
+* Accessibility toggle
+* Recent commands section
+## Continuous Interaction Loop
+### User speaks:
+> “Check my balance”
+### App responds aloud:
+> “In your SBI savings account ending with 7845, you have 25,000 rupees available.”
+---
+# MVP Features
+# Feature 1 — Check Account Balance
+## Voice Commands
+* “Check my balance”
+* “What is my balance”
+* “How much money do I have”
+## Response
+> “In your SBI savings account ending with 7845, you have 25,000 rupees available.”
+## Mock Data
+
+{
+  "bank": "SBI",
+  "accountLast4": "7845",
+  "balance": 25000
+}
+---
+# Feature 2 — Transfer Money
+## Voice Commands
+* “Transfer 500 rupees to Rahul”
+* “Send money to Amit”
+## Flow
+### Step 1
+Parse:
+* Amount
+* Recipient
+### Step 2
+Voice Confirmation:
+> “You are transferring 500 rupees to Rahul. Do you want to continue?”
+### Step 3
+User:
+> “Yes”
+### Step 4
+Voice:
+> “Transfer successful. Transaction reference number TXN458291.”
+## UI
+* Simple transaction confirmation card
+* Success animation
+---
+# Feature 3 — Cheque Book Request
+## Voice Commands
+* “Request cheque book”
+* “Issue new cheque book”
+## Voice Response
+> “Your cheque book request has been registered successfully and will be delivered within five working days.”
+---
+# Feature 4 — Recent Transactions
+## Voice Commands
+* “Show recent transactions”
+* “Recent activity”
+## Voice Response
+> “Your last transaction was 1,200 rupees spent at Reliance Fresh yesterday.”
+Display mock list.
+---
+# Feature 5 — Emergency Assistance
+Very useful for hackathon differentiation.
+## Voice Commands
+* “Help”
+* “I need assistance”
+* “Call support”
+## Response
+> “Connecting you to customer support.”
+Mock support screen.
+---
+# Feature 6 — Multilingual Voice Support
+Support:
+* English
+* Hindi
+Optional:
+* Kannada
+Allow language switching.
+---
+# Accessibility Requirements
+## Mandatory Accessibility Features
+### Large Text Mode
+* Minimum 18sp fonts
+### High Contrast
+* Dark background + bright foreground
+### Screen Reader Compatibility
+* Proper semantic labels
+### Haptic Feedback
+* Vibrate when listening starts/stops
+### Audio Guidance Everywhere
+Every screen should narrate:
+* Current context
+* Available actions
+* Errors
+---
+# Suggested Architecture
+# Clean Architecture Layers
+## Presentation
+* Compose UI
+* ViewModels
+## Domain
+* Use Cases
+* Voice Intent Parsing
+## Data
+* Mock repositories
+* Fake banking APIs
+---
+# Suggested Folder Structure
+
+com.saral.app
+│
+├── data
+│   ├── repository
+│   ├── mock
+│
+├── domain
+│   ├── models
+│   ├── usecases
+│
+├── presentation
+│   ├── auth
+│   ├── home
+│   ├── voice
+│   ├── transactions
+│
+├── accessibility
+│
+├── tts
+│
+├── speech
+│
+└── utils
+---
+# Voice Intent Engine
+Implement lightweight intent parsing.
+## Supported Intents
+| User Speech         | Intent      |
+| ------------------- | ----------- |
+| Check balance       | BALANCE     |
+| Send money          | TRANSFER    |
+| Request cheque book | CHEQUE_BOOK |
+| Recent transactions | RECENT_TXNS |
+| Help                | SUPPORT     |
+Use:
+* Regex parsing
+* Keyword matching
+* Basic NLP rules
+No LLM needed for MVP.
+---
+# Mock Banking Backend
+Create mocked repository layer.
+## Sample APIs
+### getBalance()
+Returns:
+
+{
+  "balance": 25000
+}
+### transferMoney()
+Returns:
+
+{
+  "status": "SUCCESS",
+  "txnId": "TXN458291"
+}
+### requestChequeBook()
+Returns:
+
+{
+  "status": "REQUESTED"
+}
+---
+# RBI & Banking UX Alignment (Important)
+Even though this is a hackathon MVP, the UX should demonstrate awareness of Indian banking regulations and secure practices.
+## Simulated RBI-Compliant Practices
+### Do NOT:
+* Speak full account number
+* Speak sensitive identifiers
+* Auto-confirm transfers
+### Must:
+* Require biometric login
+* Require confirmation before transfer
+* Provide audible transaction confirmation
+* Auto logout after inactivity
+* Use secure, reassuring language
+---
+# UI Theme
+## Design Style
+* Minimal
+* Calm
+* Trustworthy
+* Accessibility-first
+## Colors
+* Dark navy background
+* White text
+* Accessible contrast ratios
+## Typography
+* Large readable fonts
+* Minimal information overload
+---
+# Hackathon WOW Features
+## 1. “Wake Word”
+Optional:
+> “Hey Saral”
+## 2. Continuous Listening Mode
+## 3. Voice Navigation Only Demo
+Operate without touching screen.
+## 4. Smart Error Handling
+If unclear:
+> “I did not understand. You can say check balance or transfer money.”
+## 5. Audio Transaction Receipts
+---
+# Screens Required
+1. Splash
+2. Biometric Login
+3. Voice Assistant Home
+4. Transfer Confirmation
+5. Transaction History
+6. Cheque Book Request Success
+7. Accessibility Settings
+---
+# Deliverables Expected
+The AI agent should generate:
+## Complete Android Application
+Including:
+* Kotlin source code
+* Compose UI
+* MVVM architecture
+* Mock repositories
+* Voice recognition integration
+* Text-to-speech integration
+* Fingerprint authentication
+## Additional Deliverables
+* README.md
+* Setup instructions
+* Architecture explanation
+* Demo script
+* Mock JSON data
+* Accessibility notes
+---
+# Demo Flow for Judges
+## Scenario
+1. User opens app
+2. Fingerprint authentication succeeds
+3. App says:
+> “Welcome Jayesh.”
+4. User says:
+> “Check my balance.”
+5. App replies:
+> “In your SBI savings account ending with 7845, you have 25,000 rupees available.”
+6. User says:
+> “Transfer 500 rupees to Rahul.”
+7. App confirms transfer.
+8. User says:
+> “Request cheque book.”
+9. App confirms request.
+This creates a strong emotional and practical accessibility impact during demo.
+---
+# Important Constraints
+## MUST HAVE
+* Voice-first interaction
+* Accessibility compliance
+* Biometric authentication
+* Mock banking flows
+* Stateless architecture
+## MUST NOT
+* Real banking integration
+* Real UPI transactions
+* Real account storage
+* Complex backend dependencies
+---
+# Final Goal
+Build a production-inspired accessibility banking assistant MVP that demonstrates how Indian banking applications can become inclusive for visually impaired users through voice-assisted workflows and accessibility-first design.
+The app should feel:
+* Secure
+* Human
+* Trustworthy
+* Simple
+* Inclusive
+* RBI-aware
+* Demo-ready within hackathon timelines.
