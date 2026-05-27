@@ -7,11 +7,16 @@ const mockAccount = {
 };
 
 const mockTransactions = [
-    { id: "TXN001", description: "Reliance Fresh", amount: 1200, date: "Yesterday", type: "DEBIT" },
-    { id: "TXN002", description: "Salary Credit", amount: 45000, date: "25 May", type: "CREDIT" },
-    { id: "TXN003", description: "Electricity Bill", amount: 2350, date: "24 May", type: "DEBIT" },
-    { id: "TXN004", description: "Amazon Purchase", amount: 899, date: "22 May", type: "DEBIT" },
-    { id: "TXN005", description: "UPI from Amit", amount: 500, date: "20 May", type: "CREDIT" }
+    { id: "TXN001", description: "Reliance Fresh",      amount: 1200,  date: "27 May", type: "DEBIT"  },
+    { id: "TXN002", description: "Salary Credit",       amount: 45000, date: "25 May", type: "CREDIT" },
+    { id: "TXN003", description: "Electricity Bill",    amount: 2350,  date: "24 May", type: "DEBIT"  },
+    { id: "TXN004", description: "Amazon Purchase",     amount: 899,   date: "22 May", type: "DEBIT"  },
+    { id: "TXN005", description: "UPI from Amit",       amount: 500,   date: "20 May", type: "CREDIT" },
+    { id: "TXN006", description: "Netflix Subscription",amount: 649,   date: "18 May", type: "DEBIT"  },
+    { id: "TXN007", description: "Petrol Pump",         amount: 1800,  date: "15 May", type: "DEBIT"  },
+    { id: "TXN008", description: "Insurance Premium",   amount: 3500,  date: "10 May", type: "DEBIT"  },
+    { id: "TXN009", description: "ATM Withdrawal",      amount: 5000,  date: "8 May",  type: "DEBIT"  },
+    { id: "TXN010", description: "Dividend Credit",     amount: 1200,  date: "5 May",  type: "CREDIT" }
 ];
 
 const mockContacts = {
@@ -25,6 +30,7 @@ const mockContacts = {
 let currentScreen = "splash";
 let isListening = false;
 let awaitingConfirmation = false;
+let awaitingTransactionCount = false;
 let pendingTransfer = { amount: 0, recipient: "" };
 let recentCommands = [];
 let speechRate = 0.9;
@@ -261,6 +267,22 @@ function handleTextInput() {
     els.textInput.value = "";
 }
 
+// ========== Transaction Count Extractor ==========
+function extractTransactionCount(lower) {
+    if (/last\s+(ten|10)/.test(lower) || /last\s+10\s+transaction/.test(lower)) return 10;
+    if (/last\s+(five|5)/.test(lower)  || /last\s+5\s+transaction/.test(lower))  return 5;
+    if (/last\s+(one|1)/.test(lower)   || /last\s+1\s+transaction/.test(lower))  return 1;
+    // bare numbers when awaiting count selection
+    if (awaitingTransactionCount) {
+        if (/^(one|1)$/.test(lower))  return 1;
+        if (/^(five|5)$/.test(lower)) return 5;
+        if (/^(ten|10)$/.test(lower)) return 10;
+    }
+    // generic "last N"
+    const m = lower.match(/last\s+(\d+)/);
+    return m ? parseInt(m[1], 10) : null;
+}
+
 // ========== Voice Intent Parser ==========
 function parseIntent(text) {
     const lower = text.toLowerCase().trim();
@@ -273,22 +295,18 @@ function parseIntent(text) {
         return { type: "CONFIRM_NO" };
     }
 
-    // Balance - expanded patterns
+    // Balance
     if (/balance|kitna paisa|kitne paise|how much.*money|how much.*have|how much.*bank|how much.*account|mere.*account|mera.*balance|what.*in my.*account|money.*in.*account|tell.*balance|show.*balance|check.*balance|account.*balance|my balance|bank.*balance|savings.*balance|available.*balance|remaining.*balance|what do i have|what's in my account|whats in my account/i.test(lower)) {
         return { type: "BALANCE" };
     }
 
-    // Transfer - expanded patterns
+    // Transfer
     if (/transfer|send.*money|pay\b|send.*rupees|transfer.*rupees|bhejo|paisa bhejo|payment|send.*to\b|pay.*to\b|rupees.*to\b|rs\.?\s*\d/i.test(lower)) {
         const amountMatch = lower.match(/(\d[\d,]*\.?\d*)/);
         const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, "")) : null;
-
         let recipient = null;
         const recipientMatch = text.match(/(?:to|for)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
-        if (recipientMatch) {
-            recipient = recipientMatch[1];
-        }
-
+        if (recipientMatch) recipient = recipientMatch[1];
         return { type: "TRANSFER", amount, recipient };
     }
 
@@ -297,9 +315,24 @@ function parseIntent(text) {
         return { type: "CHEQUE_BOOK" };
     }
 
-    // Recent transactions - expanded patterns
+    // ── Transaction-specific query (salary, electricity, etc.) ──
+    // Must come BEFORE the generic transaction pattern
+    if (/check.*salary|salary.*credit|electricity.*bill|check.*electricity|is there.*transaction|any.*transaction.*for|credit.*this month|bill.*this month|check.*if.*credit|credited.*this month|paid.*this month/i.test(lower)) {
+        const knownKeywords = ["salary", "electricity", "amazon", "netflix", "petrol", "insurance", "reliance", "upi", "dividend", "atm"];
+        const keyword = knownKeywords.find(k => lower.includes(k)) || lower;
+        return { type: "TXN_QUERY", keyword };
+    }
+
+    // ── Transaction count (last 5, last ten, etc.) ──
+    // Must come BEFORE the generic transaction pattern
+    const count = extractTransactionCount(lower);
+    if (count !== null) {
+        return { type: "TXN_COUNT", count };
+    }
+
+    // ── Generic transaction mention → ask how many ──
     if (/transaction|recent.*activity|last.*activity|statement|what.*spent|spending|kharcha|history|recent.*purchase|last.*purchase|what.*bought|my.*activity|account.*activity|mini.*statement/i.test(lower)) {
-        return { type: "RECENT_TXNS" };
+        return { type: "TXN_ASK_COUNT" };
     }
 
     // Help
@@ -335,8 +368,14 @@ function handleIntent(intent) {
         case "CHEQUE_BOOK":
             handleChequeBook();
             break;
-        case "RECENT_TXNS":
-            handleRecentTransactions();
+        case "TXN_ASK_COUNT":
+            handleAskTransactionCount();
+            break;
+        case "TXN_COUNT":
+            handleTransactionCount(intent.count);
+            break;
+        case "TXN_QUERY":
+            handleQueryTransaction(intent.keyword);
             break;
         case "HELP":
             handleHelp();
@@ -354,8 +393,7 @@ function handleIntent(intent) {
 
 function handleBalance() {
     const amt = formatAmount(mockAccount.balance);
-    const response = `In your ${mockAccount.bankName} savings account ending with ${mockAccount.accountLast4}, you have ${amt} rupees available.`;
-    respond(response);
+    respond(`In your ${mockAccount.bankName} savings account ending with ${mockAccount.accountLast4}, you have ${amt} rupees available.`);
 }
 
 function handleTransfer(intent) {
@@ -388,6 +426,9 @@ function handleConfirmNo() {
     if (awaitingConfirmation) {
         awaitingConfirmation = false;
         respond("Transfer cancelled.");
+    } else if (awaitingTransactionCount) {
+        awaitingTransactionCount = false;
+        respond("Okay. How can I help you?");
     } else {
         respond("Okay. How can I help you?");
     }
@@ -398,10 +439,58 @@ function handleChequeBook() {
     vibrateSuccess();
 }
 
-function handleRecentTransactions() {
-    showTransactions(mockTransactions);
-    const latest = mockTransactions[0];
-    respond(`Your last transaction was ${formatAmount(latest.amount)} rupees spent at ${latest.description} ${latest.date}.`);
+// Step 1 — ask the user how many transactions they want to hear
+function handleAskTransactionCount() {
+    awaitingTransactionCount = true;
+    respond("Do you want to hear the last transaction, last 5 transactions, or last 10 transactions?");
+}
+
+// Step 2 — read out N transactions after the user responds
+function handleTransactionCount(count) {
+    awaitingTransactionCount = false;
+    const subset = mockTransactions.slice(0, count);
+    showTransactions(subset);
+
+    if (subset.length === 0) {
+        respond("You have no recent transactions.");
+        return;
+    }
+
+    let message;
+    if (count === 1) {
+        const t = subset[0];
+        const action = t.type === "CREDIT" ? "credited" : "debited";
+        message = `Your last transaction: ${formatAmount(t.amount)} rupees ${action} for ${t.description} on ${t.date}.`;
+    } else {
+        message = `Here are your last ${subset.length} transactions. `;
+        subset.forEach((t, i) => {
+            const action = t.type === "CREDIT" ? "credited" : "debited";
+            message += `${i + 1}. ${t.description}, ${formatAmount(t.amount)} rupees ${action} on ${t.date}. `;
+        });
+        message = message.trim();
+    }
+
+    respond(message);
+}
+
+// Query — search transactions by keyword
+function handleQueryTransaction(keyword) {
+    const matches = mockTransactions.filter(t =>
+        t.description.toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    if (matches.length === 0) {
+        respond("There are no transactions matching your request for this month.");
+        return;
+    }
+
+    const t = matches[0];
+    const amt = formatAmount(t.amount);
+    const response = t.type === "CREDIT"
+        ? `Yes, ${t.description} of ${amt} rupees was credited on ${t.date}.`
+        : `Yes, a payment of ${amt} rupees was made on ${t.date} for ${t.description}.`;
+
+    respond(response);
 }
 
 function handleHelp() {
@@ -513,8 +602,8 @@ function startApp() {
 // Auth
 els.authBtn.addEventListener("click", () => {
     vibrate(100);
-    speak("Authentication successful. Welcome Jayesh.", () => {
-        speak("You can now say commands like check balance, transfer money, or request cheque book. You can also type commands in the text box.");
+    speak("Authentication successful. Welcome.", () => {
+        speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or ask for help. You can also type commands in the text box below.");
     });
     setTimeout(() => showScreen("home"), 500);
 });

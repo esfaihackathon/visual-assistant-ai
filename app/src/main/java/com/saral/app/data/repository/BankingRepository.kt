@@ -10,4 +10,5 @@ interface BankingRepository {
     suspend fun transferMoney(amount: Double, recipientName: String): TransferResult
     suspend fun requestChequeBook(): ChequeBookRequest
     suspend fun getRecentTransactions(): List<Transaction>
+    suspend fun searchTransactions(keyword: String): List<Transaction>
 }

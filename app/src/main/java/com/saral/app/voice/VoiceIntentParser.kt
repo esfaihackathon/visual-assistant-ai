@@ -35,13 +35,29 @@ class VoiceIntentParser @Inject constructor() {
         "request.*cheque"
     ).map { it.toRegex(RegexOption.IGNORE_CASE) }
 
-    private val recentTxnPatterns = listOf(
+    // Matches specific transaction queries like "check if salary credited" or "electricity bill this month"
+    private val queryTxnPatterns = listOf(
+        "check.*if.*credit",
+        "check.*salary",
+        "salary.*credit",
+        "electricity.*bill",
+        "check.*electricity",
+        "is there.*transaction.*for",
+        "any.*transaction.*for",
+        ".*credit.*this month",
+        ".*bill.*this month",
+        "check.*transaction.*for"
+    ).map { it.toRegex(RegexOption.IGNORE_CASE) }
+
+    // Generic transaction trigger — must be checked AFTER queryTxnPatterns and count extraction
+    private val genericTxnPatterns = listOf(
         "recent.*transaction",
         "last.*transaction",
         "transaction.*history",
         "recent.*activity",
         "show.*transaction",
-        "my.*transaction"
+        "my.*transaction",
+        "\\btransaction\\b"
     ).map { it.toRegex(RegexOption.IGNORE_CASE) }
 
     private val helpPatterns = listOf(
@@ -66,6 +82,12 @@ class VoiceIntentParser @Inject constructor() {
     private val recipientRegex = Regex(
         "(?:to|for)\\s+([A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?)",
         RegexOption.IGNORE_CASE
+    )
+
+    // Keywords mapped to searchable transaction description terms
+    private val knownTransactionKeywords = listOf(
+        "salary", "electricity", "amazon", "netflix", "petrol",
+        "insurance", "reliance", "upi", "dividend", "atm", "bill"
     )
 
     fun parse(input: String): VoiceIntent {
@@ -93,8 +115,21 @@ class VoiceIntentParser @Inject constructor() {
             return VoiceIntent.RequestChequeBook
         }
 
-        if (recentTxnPatterns.any { it.containsMatchIn(trimmed) }) {
-            return VoiceIntent.RecentTransactions
+        // Specific transaction query (e.g. "check if salary credited", "electricity bill this month")
+        if (queryTxnPatterns.any { it.containsMatchIn(trimmed) }) {
+            val keyword = extractTransactionKeyword(trimmed)
+            return VoiceIntent.QueryTransaction(keyword)
+        }
+
+        // Count-specific request (e.g. "last 5 transactions", "last ten")
+        val count = extractTransactionCount(trimmed)
+        if (count != null) {
+            return VoiceIntent.TransactionCount(count)
+        }
+
+        // Generic transaction mention — ask user how many they want to hear
+        if (genericTxnPatterns.any { it.containsMatchIn(trimmed) }) {
+            return VoiceIntent.AskTransactionCount
         }
 
         if (helpPatterns.any { it.containsMatchIn(trimmed) }) {
@@ -103,4 +138,20 @@ class VoiceIntentParser @Inject constructor() {
 
         return VoiceIntent.Unknown
     }
+
+    private fun extractTransactionCount(input: String): Int? {
+        val lower = input.lowercase()
+        return when {
+            lower.contains("last ten") || lower.contains("last 10") -> 10
+            lower.contains("last five") || lower.contains("last 5") -> 5
+            lower.contains("last one") || lower.contains("last 1") -> 1
+            // Numeric "last N" catch-all
+            else -> Regex("last\\s+(\\d+)", RegexOption.IGNORE_CASE)
+                .find(input)?.groupValues?.get(1)?.toIntOrNull()
+        }
+    }
+
+    private fun extractTransactionKeyword(input: String): String =
+        knownTransactionKeywords.firstOrNull { input.contains(it, ignoreCase = true) }
+            ?: input.trim()
 }

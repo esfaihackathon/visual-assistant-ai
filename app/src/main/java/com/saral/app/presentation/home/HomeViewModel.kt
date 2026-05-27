@@ -3,10 +3,12 @@ package com.saral.app.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.saral.app.domain.models.Transaction
+import com.saral.app.domain.models.TransactionType
 import com.saral.app.domain.models.VoiceIntent
 import com.saral.app.domain.usecases.GetBalanceUseCase
 import com.saral.app.domain.usecases.GetRecentTransactionsUseCase
 import com.saral.app.domain.usecases.RequestChequeBookUseCase
+import com.saral.app.domain.usecases.SearchTransactionsUseCase
 import com.saral.app.domain.usecases.TransferMoneyUseCase
 import com.saral.app.voice.VoiceIntentParser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,6 +38,7 @@ class HomeViewModel @Inject constructor(
     private val transferMoneyUseCase: TransferMoneyUseCase,
     private val requestChequeBookUseCase: RequestChequeBookUseCase,
     private val getRecentTransactionsUseCase: GetRecentTransactionsUseCase,
+    private val searchTransactionsUseCase: SearchTransactionsUseCase,
     private val intentParser: VoiceIntentParser
 ) : ViewModel() {
 
@@ -64,7 +67,10 @@ class HomeViewModel @Inject constructor(
                 is VoiceIntent.CheckBalance -> handleCheckBalance()
                 is VoiceIntent.TransferMoney -> handleTransfer(intent)
                 is VoiceIntent.RequestChequeBook -> handleChequeBook()
-                is VoiceIntent.RecentTransactions -> handleRecentTransactions()
+                is VoiceIntent.RecentTransactions -> handleAskTransactionCount()
+                is VoiceIntent.AskTransactionCount -> handleAskTransactionCount()
+                is VoiceIntent.TransactionCount -> handleTransactionCount(intent.count)
+                is VoiceIntent.QueryTransaction -> handleQueryTransaction(intent.keyword)
                 is VoiceIntent.Help -> handleHelp()
                 is VoiceIntent.ConfirmYes -> handleConfirmYes()
                 is VoiceIntent.ConfirmNo -> handleConfirmNo()
@@ -133,17 +139,57 @@ class HomeViewModel @Inject constructor(
         respond("Your cheque book request has been registered successfully and will be delivered within ${result.estimatedDeliveryDays} working days.")
     }
 
-    private suspend fun handleRecentTransactions() {
+    // Prompt the user to choose how many transactions to hear
+    private fun handleAskTransactionCount() {
+        respond("Do you want to hear the last transaction, last 5 transactions, or last 10 transactions?")
+    }
+
+    // Read out the requested number of transactions via voice
+    private suspend fun handleTransactionCount(count: Int) {
         val transactions = getRecentTransactionsUseCase()
+        val subset = transactions.take(count)
         _uiState.update { it.copy(transactions = transactions, showTransactions = true) }
 
-        if (transactions.isNotEmpty()) {
-            val latest = transactions.first()
-            val amountFormatted = formatAmount(latest.amount)
-            respond("Your last transaction was $amountFormatted rupees spent at ${latest.description} ${latest.date}.")
-        } else {
+        if (subset.isEmpty()) {
             respond("You have no recent transactions.")
+            return
         }
+
+        val response = if (count == 1) {
+            val t = subset.first()
+            val action = if (t.type == TransactionType.CREDIT) "credited" else "debited"
+            "Your last transaction: ${formatAmount(t.amount)} rupees $action for ${t.description} on ${t.date}."
+        } else {
+            val sb = StringBuilder("Here are your last ${subset.size} transactions. ")
+            subset.forEachIndexed { index, t ->
+                val action = if (t.type == TransactionType.CREDIT) "credited" else "debited"
+                sb.append("${index + 1}. ${t.description}, ${formatAmount(t.amount)} rupees $action on ${t.date}. ")
+            }
+            sb.toString().trim()
+        }
+
+        respond(response)
+    }
+
+    // Search transactions by keyword and respond with voice
+    private suspend fun handleQueryTransaction(keyword: String) {
+        val matches = searchTransactionsUseCase(keyword)
+
+        if (matches.isEmpty()) {
+            respond("There are no transactions matching your request for this month.")
+            return
+        }
+
+        // Report the most recent matching transaction
+        val t = matches.first()
+        val amountFormatted = formatAmount(t.amount)
+        val response = if (t.type == TransactionType.CREDIT) {
+            "Yes, ${t.description} of $amountFormatted rupees was credited on ${t.date}."
+        } else {
+            "Yes, a payment of $amountFormatted rupees was made on ${t.date} for ${t.description}."
+        }
+
+        respond(response)
     }
 
     private fun handleHelp() {
