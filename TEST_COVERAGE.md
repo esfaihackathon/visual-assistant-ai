@@ -159,6 +159,54 @@ Comprehensive unit test suite for Saral Voice-First Banking Accessibility Layer.
 
 ---
 
+### 7. Android Instrumentation Layer
+
+#### 7.1 TextToSpeechManager
+
+**File:** `app/src/androidTest/java/com/saral/app/voice/TextToSpeechManagerTest.kt`
+
+| Test Case                         | Description                                         | Verification                                          |
+| --------------------------------- | --------------------------------------------------- | ---------------------------------------------------- |
+| `initialize_setsUpTextToSpeech()` | Initializes TTS engine and calls callback           | Callback invoked on ready                             |
+| `isSpeaking_flowEmitsCorrectly()` | Verifies speaking state flow                        | Initially reports not speaking                        |
+| `speak_withText()`                | Speaks text without exception                       | speak() callable after initialization                 |
+| `speak_withCallback()`            | Speaks with completion callback                     | callback accepted and no failure                      |
+| `setLanguage_updatesLocale()`     | Updates TTS locale                                  | Locale can be changed safely                          |
+| `shutdown_cleansUp()`             | Shuts down TTS resources correctly                  | No exception on shutdown                              |
+
+#### 7.2 SpeechRecognizerManager
+
+**File:** `app/src/androidTest/java/com/saral/app/voice/SpeechRecognizerManagerTest.kt`
+
+| Test Case                            | Description                                          | Verification                                                         |
+| ------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------- |
+| `initialize_setUpsSpeechRecognizer()` | Initializes speech recognizer                         | Initialization succeeds without exceptions                          |
+| `isListening_flowInitiallyFalse()`   | Verifies initial listening state                      | Flow emits false initially                                           |
+| `recognizedText_flowInitiallyEmpty()`| Verifies initial recognized text                      | Flow emits empty string initially                                    |
+| `startListening_withCallback()`      | Starts listening with callback                        | Callback accepted and startListening() call succeeds                |
+| `stopListening_stopsRecognition()`   | Stops speech recognition                               | stopListening() succeeds without exceptions                         |
+| `setLanguage_updatesLocale()`        | Sets recognition language                              | Language can be switched without exception                         |
+| `destroy_cleansUp()`                 | Destroys speech recognizer                             | destroy() succeeds without exceptions                               |
+| `startListening_multipleCalls()`     | Handles repeated start/stop cycles                     | Multiple start/stop cycles execute without exception                 |
+
+#### 7.3 HapticManager
+
+**File:** `app/src/androidTest/java/com/saral/app/accessibility/HapticManagerTest.kt`
+
+| Test Case                             | Description                                         | Verification                                                        |
+| ------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
+| `vibrateShort_executesWithoutException()` | Executes short vibration pattern                   | No exception thrown                                                 |
+| `vibrateMedium_executesWithoutException()`| Executes medium vibration pattern                  | No exception thrown                                                 |
+| `vibrateSuccess_executesDoublePattern()` | Executes success vibration pattern                | No exception thrown                                                 |
+| `vibrateError_executesLongPattern()`   | Executes error vibration pattern                    | No exception thrown                                                 |
+| `vibrateShort_beforeVibrateSuccess()`  | Runs short then success vibration sequence          | Multiple patterns execute safely                                   |
+| `allVibrationPatterns_sequential()`    | Runs all patterns sequentially                      | All patterns execute in order without errors                        |
+| `hapticManager_worksOnMultipleApiLevels()` | Works across supported API levels                 | Adapts to API level and uses appropriate vibrator API              |
+| `vibrateSuccess_calledMultipleTimes()` | Repeats success pattern multiple times              | No conflicts when repeated                                          |
+| `vibrateError_calledMultipleTimes()`   | Repeats error pattern multiple times                | No conflicts when repeated                                          |
+
+---
+
 ## Test Metrics
 
 ### By Layer
@@ -171,12 +219,16 @@ Comprehensive unit test suite for Saral Voice-First Banking Accessibility Layer.
 | Data Repository      | 1          | 4          | Unit           |
 | View Model           | 1          | 4          | Unit           |
 | Dependency Injection | 1          | 3          | Unit           |
-| **Total**            | **12**     | **55+**    | **Unit (JVM)** |
+| Android Instrumentation | 3 | 23 | Instrumentation |
+| **Total**            | **15**     | **78+**    | **Mixed** |
 
 ### Dependencies
 
 - **JUnit 4** — Test framework
 - **kotlinx-coroutines-test** — Coroutine testing support for async use cases
+- **Robolectric 4.11.1** — Android framework mocking for unit tests
+- **androidx.test:runner:1.5.2** — Instrumentation test runner
+- **androidx.test.ext:junit:1.1.5** — Android JUnit extension
 
 ---
 
@@ -206,11 +258,26 @@ cd visual-assistant-ai
 ./gradlew :app:testDebugUnitTest --tests com.saral.app.voice.VoiceIntentParserTest.parsesCheckBalance
 ```
 
+### Run Instrumentation Tests
+
+```bash
+./gradlew :app:connectedAndroidTest
+```
+
+### Run Specific Instrumentation Test
+
+```bash
+./gradlew :app:connectedAndroidTest --tests com.saral.app.voice.TextToSpeechManagerTest
+```
+
 ### Generate Test Report
 
 ```bash
 ./gradlew :app:testDebugUnitTest
-# Report generated at: app/build/reports/tests/testDebugUnitTest/index.html
+# Unit test report: app/build/reports/tests/testDebugUnitTest/index.html
+
+./gradlew :app:connectedAndroidTest
+# Instrumentation report: app/build/reports/androidTests/connected/index.html
 ```
 
 ---
