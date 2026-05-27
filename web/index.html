@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saral — Accessible Banking Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="screen active">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <span class="material-icons-round">accessibility_new</span>
+            </div>
+            <h1 class="splash-title">Saral</h1>
+            <p class="splash-subtitle">Accessible Banking for Everyone</p>
+        </div>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen">
+        <div class="auth-content">
+            <div class="fingerprint-icon pulse">
+                <span class="material-icons-round">fingerprint</span>
+            </div>
+            <h2>Touch the fingerprint sensor</h2>
+            <p class="auth-subtitle">Authenticate to access your banking</p>
+            <button id="auth-btn" class="auth-button" aria-label="Authenticate with fingerprint">
+                <span class="material-icons-round">lock_open</span>
+                Tap to Authenticate (Demo)
+            </button>
+        </div>
+    </div>
+
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen">
+        <div class="home-container">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1 class="app-title">Saral</h1>
+                <button id="settings-btn" class="icon-btn" aria-label="Open accessibility settings">
+                    <span class="material-icons-round">settings</span>
+                </button>
+            </div>
+
+            <!-- Voice Status Banner -->
+            <div id="voice-status" class="voice-status hidden">
+                <span class="material-icons-round" id="voice-status-icon">mic_off</span>
+                <span id="voice-status-text"></span>
+            </div>
+
+            <!-- Response Card -->
+            <div id="response-card" class="response-card hidden" role="status" aria-live="polite">
+                <span class="material-icons-round response-icon">volume_up</span>
+                <p id="response-text"></p>
+            </div>
+
+            <!-- Recognized Text -->
+            <div id="recognized-card" class="recognized-card hidden">
+                <p id="recognized-text"></p>
+            </div>
+
+            <!-- Transaction List -->
+            <div id="transactions-card" class="transactions-card hidden">
+                <h3>Recent Transactions</h3>
+                <div id="transactions-list"></div>
+            </div>
+
+            <!-- Spacer -->
+            <div class="spacer"></div>
+
+            <!-- Listening Indicator -->
+            <div id="listening-indicator" class="listening-indicator hidden">
+                <div class="listening-waves">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <p>Listening...</p>
+            </div>
+
+            <!-- Processing Indicator -->
+            <div id="processing-indicator" class="processing-indicator hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Mic Button -->
+            <button id="mic-btn" class="mic-button" aria-label="Tap to speak a command">
+                <span class="material-icons-round">mic</span>
+            </button>
+            <p class="mic-hint">Tap to speak</p>
+
+            <!-- Text Input (fallback + always available) -->
+            <div class="text-input-area">
+                <div class="text-input-wrapper">
+                    <input type="text" id="text-input" class="text-input"
+                           placeholder="Type a command... e.g. check my balance"
+                           aria-label="Type a banking command">
+                    <button id="send-btn" class="send-btn" aria-label="Send command">
+                        <span class="material-icons-round">send</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Commands -->
+            <div class="quick-commands">
+                <button class="quick-cmd" data-cmd="Check my balance">Check Balance</button>
+                <button class="quick-cmd" data-cmd="Transfer 500 rupees to Rahul">Transfer Money</button>
+                <button class="quick-cmd" data-cmd="Request cheque book">Cheque Book</button>
+                <button class="quick-cmd" data-cmd="Show recent transactions">Transactions</button>
+                <button class="quick-cmd" data-cmd="Help">Help</button>
+            </div>
+
+            <!-- Recent Commands -->
+            <div id="recent-commands" class="recent-commands hidden">
+                <div class="recent-header">
+                    <span class="material-icons-round">history</span>
+                    <span>Recent</span>
+                </div>
+                <div id="recent-list" class="recent-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen">
+        <div class="settings-container">
+            <div class="settings-header">
+                <button id="settings-back-btn" class="icon-btn" aria-label="Go back to home">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <h2>Accessibility Settings</h2>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon">language</span>
+                    <div>
+                        <h3>Language</h3>
+                        <p>Select voice language</p>
+                    </div>
+                </div>
+                <div class="language-btns">
+                    <button class="lang-btn active" data-lang="en-IN">English</button>
+                    <button class="lang-btn" data-lang="hi-IN">Hindi</button>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon">speed</span>
+                    <div>
+                        <h3>Speech Speed</h3>
+                        <p>Adjust how fast the assistant speaks</p>
+                    </div>
+                </div>
+                <div class="speed-control">
+                    <input type="range" id="speech-rate" min="0.5" max="1.5" step="0.1" value="0.9"
+                           aria-label="Speech speed slider">
+                    <span id="speed-value">0.9x</span>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon">vibration</span>
+                    <div>
+                        <h3>Haptic Feedback</h3>
+                        <p>Vibrate on actions</p>
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input type="checkbox" id="haptic-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon">text_fields</span>
+                    <div>
+                        <h3>Large Text</h3>
+                        <p>Always enabled. Minimum 18sp fonts.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

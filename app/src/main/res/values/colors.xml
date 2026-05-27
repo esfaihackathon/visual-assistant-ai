@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="navy_dark">#FF0A1628</color>
+    <color name="navy_medium">#FF132240</color>
+    <color name="navy_light">#FF1B3358</color>
+    <color name="accent_blue">#FF4DA8FF</color>
+    <color name="accent_green">#FF4CAF50</color>
+    <color name="text_white">#FFFFFFFF</color>
+    <color name="text_light">#FFB0BEC5</color>
+    <color name="error_red">#FFEF5350</color>
+    <color name="surface_card">#FF1A2D4A</color>
+</resources>
