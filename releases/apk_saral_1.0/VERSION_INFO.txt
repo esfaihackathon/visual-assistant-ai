@@ -1,0 +1,38 @@
+Saral - Accessible Banking Assistant
+=====================================
+Version: 1.0.0 (Debug Build)
+Build Date: 2026-05-27
+Package: com.saral.app
+Min SDK: 26 (Android 8.0 Oreo)
+Target SDK: 35
+Compile SDK: 36
+
+Features Included:
+- Voice-first interaction (SpeechRecognizer + TTS)
+- Natural Language Understanding (regex-based intent parser)
+- Biometric authentication (fingerprint with demo bypass)
+- Check Balance (voice-activated)
+- Transfer Money (voice-guided with confirmation)
+- Cheque Book Request (voice-activated)
+- Recent Transactions (voice narration)
+- Help commands
+- Haptic feedback (vibration cues)
+- High contrast dark navy UI (WCAG-compliant)
+- TalkBack compatible (semantic labels)
+- Multi-language support (English + Hindi)
+- Accessibility settings (language, speech speed, haptic toggle)
+
+Data:
+- All banking data is MOCK (in-memory only)
+- No real banking API integration
+- No sensitive data stored or transmitted
+- Demo account: SBI Savings, ending 7845, balance Rs. 25,000
+
+Installation:
+1. Transfer saral-v1.0-debug.apk to your Android device
+2. Enable "Install from Unknown Sources" in Settings > Security
+3. Tap the APK file to install
+4. Grant microphone permission when prompted
+5. Use fingerprint or tap "Cancel" for demo mode
+
+Note: This is a debug build for testing purposes.

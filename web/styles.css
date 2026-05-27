@@ -1,0 +1,715 @@
+/* ========== Reset & Base ========== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --navy-dark: #0A1628;
+    --navy-medium: #132240;
+    --navy-light: #1B3358;
+    --accent-blue: #4DA8FF;
+    --accent-green: #4CAF50;
+    --success-green: #66BB6A;
+    --text-white: #FFFFFF;
+    --text-light: #B0BEC5;
+    --error-red: #EF5350;
+    --surface-card: #1A2D4A;
+    --warning-orange: #FF9800;
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--navy-dark);
+    color: var(--text-white);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ========== Screen Management ========== */
+.screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 1;
+}
+
+.screen.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
+}
+
+/* ========== Splash Screen ========== */
+.splash-content {
+    text-align: center;
+    animation: fadeInUp 1s ease;
+}
+
+.splash-icon .material-icons-round {
+    font-size: 100px;
+    color: var(--accent-blue);
+}
+
+.splash-title {
+    font-size: 42px;
+    font-weight: 700;
+    margin-top: 20px;
+    letter-spacing: -0.5px;
+}
+
+.splash-subtitle {
+    font-size: 18px;
+    color: var(--text-light);
+    margin-top: 8px;
+}
+
+/* ========== Auth Screen ========== */
+.auth-content {
+    text-align: center;
+    padding: 32px;
+}
+
+.fingerprint-icon .material-icons-round {
+    font-size: 120px;
+    color: var(--accent-blue);
+}
+
+.fingerprint-icon.pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.auth-content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-top: 32px;
+}
+
+.auth-subtitle {
+    font-size: 18px;
+    color: var(--text-light);
+    margin-top: 12px;
+}
+
+.auth-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 40px;
+    padding: 16px 32px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-white);
+    background: var(--accent-blue);
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+}
+
+.auth-button:hover {
+    background: #3d98ef;
+    transform: scale(1.03);
+}
+
+.auth-button:active {
+    transform: scale(0.97);
+}
+
+.auth-button .material-icons-round {
+    font-size: 24px;
+}
+
+/* ========== Home Screen ========== */
+.home-container {
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: auto;
+}
+
+.top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.app-title {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover {
+    background: var(--navy-light);
+}
+
+.icon-btn .material-icons-round {
+    font-size: 28px;
+}
+
+/* ========== Response Card ========== */
+.response-card {
+    width: 100%;
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: slideIn 0.3s ease;
+    margin-bottom: 12px;
+}
+
+.response-icon {
+    color: var(--accent-blue);
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.response-card p {
+    font-size: 18px;
+    line-height: 28px;
+    color: var(--text-white);
+}
+
+/* ========== Recognized Text ========== */
+.recognized-card {
+    width: 100%;
+    background: var(--navy-light);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease;
+}
+
+.recognized-card p {
+    font-size: 18px;
+    color: var(--accent-blue);
+    text-align: center;
+    font-style: italic;
+}
+
+/* ========== Transactions ========== */
+.transactions-card {
+    width: 100%;
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    animation: slideIn 0.3s ease;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.transactions-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.txn-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.txn-row:last-child {
+    border-bottom: none;
+}
+
+.txn-desc {
+    font-size: 16px;
+    color: var(--text-white);
+}
+
+.txn-date {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.txn-amount {
+    font-size: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.txn-amount.debit { color: var(--error-red); }
+.txn-amount.credit { color: var(--success-green); }
+
+/* ========== Spacer ========== */
+.spacer {
+    flex: 1;
+    min-height: 12px;
+}
+
+/* ========== Listening Indicator ========== */
+.listening-indicator {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.listening-indicator p {
+    font-size: 18px;
+    color: var(--accent-blue);
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.listening-waves {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+}
+
+.listening-waves span {
+    width: 4px;
+    height: 10px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    animation: wave 0.8s ease-in-out infinite;
+}
+
+.listening-waves span:nth-child(1) { animation-delay: 0s; }
+.listening-waves span:nth-child(2) { animation-delay: 0.1s; }
+.listening-waves span:nth-child(3) { animation-delay: 0.2s; }
+.listening-waves span:nth-child(4) { animation-delay: 0.3s; }
+.listening-waves span:nth-child(5) { animation-delay: 0.4s; }
+
+/* ========== Processing ========== */
+.processing-indicator {
+    margin-bottom: 12px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--navy-light);
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+/* ========== Mic Button ========== */
+.mic-button {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-blue);
+    color: var(--text-white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+    margin-bottom: 6px;
+}
+
+.mic-button .material-icons-round {
+    font-size: 40px;
+}
+
+.mic-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(77, 168, 255, 0.3);
+}
+
+.mic-button:active {
+    transform: scale(0.95);
+}
+
+.mic-button.listening {
+    background: var(--error-red);
+    animation: micPulse 0.8s ease-in-out infinite;
+    box-shadow: 0 0 0 8px rgba(239, 83, 80, 0.2);
+}
+
+.mic-hint {
+    font-size: 16px;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+
+/* ========== Voice Status Banner ========== */
+.voice-status {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+}
+
+.voice-status.status-error {
+    background: rgba(239, 83, 80, 0.15);
+    color: var(--error-red);
+    border: 1px solid rgba(239, 83, 80, 0.3);
+}
+
+.voice-status.status-success {
+    background: rgba(76, 175, 80, 0.15);
+    color: var(--success-green);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.voice-status.status-warning {
+    background: rgba(255, 152, 0, 0.15);
+    color: var(--warning-orange);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.voice-status .material-icons-round {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+/* ========== Text Input Area ========== */
+.text-input-area {
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.text-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--navy-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 4px 4px 4px 16px;
+    transition: border-color 0.2s;
+}
+
+.text-input-wrapper:focus-within {
+    border-color: var(--accent-blue);
+}
+
+.text-input {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-white);
+    font-size: 16px;
+    font-family: inherit;
+    padding: 10px 0;
+}
+
+.text-input::placeholder {
+    color: var(--text-light);
+    opacity: 0.7;
+}
+
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: var(--accent-blue);
+    color: var(--text-white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.send-btn:hover {
+    background: #3d98ef;
+    transform: scale(1.05);
+}
+
+.send-btn:active {
+    transform: scale(0.95);
+}
+
+.send-btn .material-icons-round {
+    font-size: 22px;
+}
+
+/* ========== Quick Commands ========== */
+.quick-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+.quick-cmd {
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-light);
+    background: var(--navy-light);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.quick-cmd:hover {
+    background: var(--surface-card);
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.quick-cmd:active {
+    transform: scale(0.95);
+}
+
+/* ========== Recent Commands ========== */
+.recent-commands {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.recent-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-light);
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.recent-header .material-icons-round {
+    font-size: 18px;
+}
+
+.recent-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.recent-chip {
+    padding: 8px 14px;
+    font-size: 14px;
+    color: var(--text-light);
+    background: var(--navy-light);
+    border-radius: 20px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ========== Settings Screen ========== */
+.settings-container {
+    width: 100%;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+}
+
+.settings-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.setting-card {
+    background: var(--surface-card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.setting-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.setting-icon {
+    color: var(--accent-blue);
+    font-size: 24px;
+}
+
+.setting-info h3 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.setting-info p {
+    font-size: 15px;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+/* Language buttons */
+.language-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.lang-btn {
+    padding: 10px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-white);
+    background: var(--navy-light);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+
+.lang-btn.active {
+    background: var(--accent-blue);
+}
+
+/* Speed control */
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.speed-control input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent-blue);
+    height: 6px;
+}
+
+#speed-value {
+    font-size: 16px;
+    color: var(--accent-blue);
+    font-weight: 600;
+    min-width: 40px;
+}
+
+/* Toggle switch */
+.toggle {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+}
+
+.toggle input { display: none; }
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--navy-light);
+    border-radius: 28px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 3px;
+    bottom: 3px;
+    background: var(--text-white);
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle input:checked + .toggle-slider {
+    background: var(--accent-blue);
+}
+
+.toggle input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+/* ========== Utility ========== */
+.hidden {
+    display: none !important;
+}
+
+/* ========== Animations ========== */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+
+@keyframes micPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes wave {
+    0%, 100% { height: 10px; }
+    50% { height: 28px; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========== Mobile Responsive ========== */
+@media (max-width: 400px) {
+    .home-container { padding: 16px; }
+    .mic-button { width: 76px; height: 76px; }
+    .mic-button .material-icons-round { font-size: 34px; }
+    .quick-cmd { font-size: 13px; padding: 8px 14px; }
+}
