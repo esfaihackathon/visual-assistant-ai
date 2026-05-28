@@ -6,18 +6,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 val SaralTypography = Typography(
-    displayLarge = TextStyle(
-        fontSize = 36.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextWhite,
-        lineHeight = 44.sp
-    ),
-    displayMedium = TextStyle(
-        fontSize = 28.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextWhite,
-        lineHeight = 36.sp
-    ),
+        displayLarge = TextStyle(
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextWhite,
+            lineHeight = 44.sp
+        ),
+displayMedium = TextStyle(
+fontSize = 28.sp,
+fontWeight = FontWeight.Bold,
+color = TextWhite,
+lineHeight = 36.sp
+),
     headlineLarge = TextStyle(
         fontSize = 24.sp,
         fontWeight = FontWeight.SemiBold,

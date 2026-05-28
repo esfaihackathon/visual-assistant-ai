@@ -57,8 +57,8 @@ class MainActivity : FragmentActivity() {
         initializeVoice()
         requestMicPermission()
 
-        authViewModel.setSpeakCallback { text, onComplete ->
-            ttsManager.speak(text, onComplete)
+        authViewModel.setSpeakCallback { text ->
+            ttsManager.speak(text)
         }
 
         homeViewModel.setSpeakCallback { text ->
@@ -81,7 +81,6 @@ class MainActivity : FragmentActivity() {
                         onSpeak = { text -> ttsManager.speak(text) },
                         onAuthenticate = { showBiometricPrompt() },
                         onMicClick = { onMicButtonClick() },
-                        onOtpMicClick = { onOtpMicButtonClick() },
                         isListening = isListening,
                         homeViewModel = homeViewModel,
                         authViewModel = authViewModel
@@ -124,7 +123,6 @@ class MainActivity : FragmentActivity() {
                     if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
                         errorCode == BiometricPrompt.ERROR_USER_CANCELED
                     ) {
-                        // Demo mode: skip biometric, proceed to OTP
                         hapticManager.vibrateSuccess()
                         authViewModel.onBiometricSuccess()
                     }
@@ -148,7 +146,6 @@ class MainActivity : FragmentActivity() {
                 .build()
             biometricPrompt.authenticate(promptInfo)
         } else {
-            // No biometric hardware — proceed to OTP in demo mode
             hapticManager.vibrateSuccess()
             authViewModel.onBiometricSuccess()
         }
@@ -165,18 +162,6 @@ class MainActivity : FragmentActivity() {
             speechManager.startListening { result ->
                 homeViewModel.setListening(false)
                 homeViewModel.onVoiceResult(result)
-            }
-        }
-    }
-
-    private fun onOtpMicButtonClick() {
-        hapticManager.vibrateShort()
-        if (speechManager.isListening.value) {
-            speechManager.stopListening()
-        } else {
-            ttsManager.stop()
-            speechManager.startListening { result ->
-                authViewModel.onVoiceInput(result)
             }
         }
     }

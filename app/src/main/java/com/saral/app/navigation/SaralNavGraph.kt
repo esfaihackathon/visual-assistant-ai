@@ -28,7 +28,6 @@ fun SaralNavGraph(
     onSpeak: (String) -> Unit,
     onAuthenticate: () -> Unit,
     onMicClick: () -> Unit,
-    onOtpMicClick: () -> Unit,
     isListening: Boolean,
     homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel
@@ -59,17 +58,12 @@ fun SaralNavGraph(
                         navController.navigate(Routes.HOME) {
                             popUpTo(Routes.AUTH) { inclusive = true }
                         }
-                    else -> Unit
                 }
             }
 
             AuthScreen(
                 authStep = authStep,
-                isListening = isListening,
-                onAuthenticate = onAuthenticate,
-                onOtpMicClick = onOtpMicClick,
-                onRegenerate = { authViewModel.onVoiceInput("yes") },
-                onCancel = { authViewModel.onVoiceInput("no") }
+                onAuthenticate = onAuthenticate
             )
         }
 
