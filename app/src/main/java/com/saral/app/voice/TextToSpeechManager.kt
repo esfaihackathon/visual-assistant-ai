@@ -21,13 +21,16 @@ class TextToSpeechManager @Inject constructor(
 
     private var isInitialized = false
     private var currentLocale: Locale = Locale("en", "IN")
+    private var currentSpeechRate = 0.88f
+    private var currentPitch = 0.9f
+    private var selectedVoiceName: String? = null
 
     fun initialize(onReady: () -> Unit = {}) {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 selectBestVoice()
-                tts?.setSpeechRate(0.88f)
-                tts?.setPitch(0.9f)
+                tts?.setSpeechRate(currentSpeechRate)
+                tts?.setPitch(currentPitch)
                 isInitialized = true
 
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -65,9 +68,42 @@ class TextToSpeechManager @Inject constructor(
                      else (fallback ?: best)
 
         if (chosen != null) {
+            selectedVoiceName = chosen.name
             tts?.voice = chosen
         } else {
             tts?.language = currentLocale
+        }
+    }
+
+    fun getAvailableVoiceNames(): List<String> {
+        return tts?.voices
+            ?.filter { voice ->
+                voice.locale.language == "en" &&
+                !voice.features.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)
+            }
+            ?.map { it.name }
+            ?.distinct()
+            ?: emptyList()
+    }
+
+    fun getSelectedVoiceName(): String? {
+        return selectedVoiceName ?: tts?.voice?.name
+    }
+
+    fun setVoice(voiceName: String) {
+        val chosen = tts?.voices?.firstOrNull { it.name == voiceName }
+        if (chosen != null) {
+            selectedVoiceName = chosen.name
+            tts?.voice = chosen
+        }
+    }
+
+    fun getSpeechRate(): Float = currentSpeechRate
+
+    fun setSpeechRate(rate: Float) {
+        currentSpeechRate = rate
+        if (isInitialized) {
+            tts?.setSpeechRate(rate)
         }
     }
 
@@ -99,8 +135,11 @@ class TextToSpeechManager @Inject constructor(
     fun setLanguage(locale: Locale) {
         currentLocale = locale
         tts?.language = locale
+        selectedVoiceName = null
         selectBestVoice()
     }
+
+    fun getCurrentLanguage(): Locale = currentLocale
 
     fun shutdown() {
         tts?.stop()
