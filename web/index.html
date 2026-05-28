@@ -23,7 +23,9 @@
 
     <!-- Auth Screen -->
     <div id="auth-screen" class="screen">
-        <div class="auth-content">
+
+        <!-- Phase 1: Biometric -->
+        <div id="auth-biometric" class="auth-content">
             <div class="fingerprint-icon pulse">
                 <span class="material-icons-round">fingerprint</span>
             </div>
@@ -34,6 +36,59 @@
                 Tap to Authenticate (Demo)
             </button>
         </div>
+
+        <!-- Phase 2: Simulated phone call -->
+        <div id="auth-calling" class="auth-content hidden">
+            <div class="call-icon pulse">
+                <span class="material-icons-round">call</span>
+            </div>
+            <h2>Calling your registered number...</h2>
+            <p class="auth-subtitle">Listen to the automated call for your OTP</p>
+            <div class="spinner" style="margin:32px auto 0;"></div>
+        </div>
+
+        <!-- Phase 3: OTP input -->
+        <div id="auth-otp-input" class="auth-content hidden">
+            <div class="otp-icon">
+                <span class="material-icons-round">pin</span>
+            </div>
+            <h2>Enter OTP</h2>
+            <p class="auth-subtitle">Say your 4-digit one-time password</p>
+            <p id="otp-attempts-text" class="auth-subtitle otp-attempts">3 attempts remaining</p>
+            <button id="otp-mic-btn" class="auth-button otp-mic-active" aria-label="Tap to say OTP">
+                <span class="material-icons-round">mic</span>
+                Tap to Say OTP
+            </button>
+            <div class="otp-text-row">
+                <input type="text" id="otp-text-input" class="otp-text-field"
+                       placeholder="Or type OTP here" maxlength="6"
+                       aria-label="Type your OTP">
+                <button id="otp-text-send" class="otp-send-btn" aria-label="Submit OTP">
+                    <span class="material-icons-round">send</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Phase 4: OTP exhausted -->
+        <div id="auth-otp-exhausted" class="auth-content hidden">
+            <div class="warning-icon">
+                <span class="material-icons-round">warning</span>
+            </div>
+            <h2>Too many incorrect attempts</h2>
+            <p class="auth-subtitle">Say "yes" to regenerate OTP or "no" to cancel</p>
+            <button id="otp-regen-mic-btn" class="auth-button otp-mic-active" aria-label="Say yes or no">
+                <span class="material-icons-round">mic</span>
+                Say Yes or No
+            </button>
+            <div class="otp-action-row">
+                <button id="otp-cancel-btn" class="otp-secondary-btn">Cancel</button>
+                <button id="otp-regen-btn" class="auth-button">
+                    <span class="material-icons-round">refresh</span>
+                    Regenerate OTP
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <!-- Home Screen -->
@@ -150,6 +205,19 @@
 
             <div class="setting-card">
                 <div class="setting-info">
+                    <span class="material-icons-round setting-icon">record_voice_over</span>
+                    <div>
+                        <h3>Voice</h3>
+                        <p>Choose speaking voice (Google/Microsoft voices sound most natural)</p>
+                    </div>
+                </div>
+                <select id="voice-select" class="voice-select-dropdown" aria-label="Select voice">
+                    <option value="">Loading voices...</option>
+                </select>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
                     <span class="material-icons-round setting-icon">speed</span>
                     <div>
                         <h3>Speech Speed</h3>
@@ -157,9 +225,24 @@
                     </div>
                 </div>
                 <div class="speed-control">
-                    <input type="range" id="speech-rate" min="0.5" max="1.5" step="0.1" value="0.9"
+                    <input type="range" id="speech-rate" min="0.5" max="1.5" step="0.05" value="0.88"
                            aria-label="Speech speed slider">
                     <span id="speed-value">0.9x</span>
+                </div>
+            </div>
+
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon">tune</span>
+                    <div>
+                        <h3>Voice Pitch</h3>
+                        <p>Lower feels warmer, higher feels brighter</p>
+                    </div>
+                </div>
+                <div class="speed-control">
+                    <input type="range" id="pitch-slider" min="0.5" max="1.5" step="0.05" value="0.95"
+                           aria-label="Voice pitch slider">
+                    <span id="pitch-value">0.95</span>
                 </div>
             </div>
 

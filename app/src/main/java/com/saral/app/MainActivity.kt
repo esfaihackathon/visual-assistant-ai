@@ -11,12 +11,14 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.saral.app.accessibility.HapticManager
-import com.saral.app.navigation.Routes
 import com.saral.app.navigation.SaralNavGraph
+import com.saral.app.presentation.auth.AuthViewModel
 import com.saral.app.presentation.home.HomeViewModel
 import com.saral.app.ui.theme.NavyDark
 import com.saral.app.ui.theme.SaralTheme
@@ -34,6 +36,7 @@ class MainActivity : FragmentActivity() {
     @Inject lateinit var hapticManager: HapticManager
 
     private val homeViewModel: HomeViewModel by viewModels()
+    private val authViewModel: AuthViewModel by viewModels()
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private var navController: androidx.navigation.NavHostController? = null
@@ -54,6 +57,10 @@ class MainActivity : FragmentActivity() {
         initializeVoice()
         requestMicPermission()
 
+        authViewModel.setSpeakCallback { text, onComplete ->
+            ttsManager.speak(text, onComplete)
+        }
+
         homeViewModel.setSpeakCallback { text ->
             ttsManager.speak(text)
         }
@@ -67,12 +74,17 @@ class MainActivity : FragmentActivity() {
                     val navCtrl = rememberNavController()
                     navController = navCtrl
 
+                    val isListening by speechManager.isListening.collectAsState()
+
                     SaralNavGraph(
                         navController = navCtrl,
                         onSpeak = { text -> ttsManager.speak(text) },
                         onAuthenticate = { showBiometricPrompt() },
                         onMicClick = { onMicButtonClick() },
-                        homeViewModel = homeViewModel
+                        onOtpMicClick = { onOtpMicButtonClick() },
+                        isListening = isListening,
+                        homeViewModel = homeViewModel,
+                        authViewModel = authViewModel
                     )
                 }
             }
@@ -98,12 +110,7 @@ class MainActivity : FragmentActivity() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     hapticManager.vibrateSuccess()
-                    ttsManager.speak("Authentication successful. Welcome Jayesh.") {
-                        ttsManager.speak("You can now say commands like check balance, transfer money, or request cheque book.")
-                    }
-                    navController?.navigate(Routes.HOME) {
-                        popUpTo(Routes.AUTH) { inclusive = true }
-                    }
+                    authViewModel.onBiometricSuccess()
                 }
 
                 override fun onAuthenticationFailed() {
@@ -117,14 +124,9 @@ class MainActivity : FragmentActivity() {
                     if (errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON ||
                         errorCode == BiometricPrompt.ERROR_USER_CANCELED
                     ) {
-                        // For demo: bypass auth and go to home
+                        // Demo mode: skip biometric, proceed to OTP
                         hapticManager.vibrateSuccess()
-                        ttsManager.speak("Demo mode. Welcome Jayesh.") {
-                            ttsManager.speak("You can now say commands like check balance, transfer money, or request cheque book.")
-                        }
-                        navController?.navigate(Routes.HOME) {
-                            popUpTo(Routes.AUTH) { inclusive = true }
-                        }
+                        authViewModel.onBiometricSuccess()
                     }
                 }
             }
@@ -146,14 +148,9 @@ class MainActivity : FragmentActivity() {
                 .build()
             biometricPrompt.authenticate(promptInfo)
         } else {
-            // No biometric hardware — proceed in demo mode
+            // No biometric hardware — proceed to OTP in demo mode
             hapticManager.vibrateSuccess()
-            ttsManager.speak("Authentication successful. Welcome Jayesh.") {
-                ttsManager.speak("You can now say commands like check balance, transfer money, or request cheque book.")
-            }
-            navController?.navigate(Routes.HOME) {
-                popUpTo(Routes.AUTH) { inclusive = true }
-            }
+            authViewModel.onBiometricSuccess()
         }
     }
 
@@ -168,6 +165,18 @@ class MainActivity : FragmentActivity() {
             speechManager.startListening { result ->
                 homeViewModel.setListening(false)
                 homeViewModel.onVoiceResult(result)
+            }
+        }
+    }
+
+    private fun onOtpMicButtonClick() {
+        hapticManager.vibrateShort()
+        if (speechManager.isListening.value) {
+            speechManager.stopListening()
+        } else {
+            ttsManager.stop()
+            speechManager.startListening { result ->
+                authViewModel.onVoiceInput(result)
             }
         }
     }

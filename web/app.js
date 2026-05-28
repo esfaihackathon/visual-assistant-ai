@@ -33,9 +33,17 @@ let awaitingConfirmation = false;
 let awaitingTransactionCount = false;
 let pendingTransfer = { amount: 0, recipient: "" };
 let recentCommands = [];
-let speechRate = 0.9;
+let speechRate = 0.88;
+let selectedPitch = 0.95;
 let selectedLang = "en-IN";
+let selectedVoice = null;
 let voiceSupported = false;
+
+// OTP auth state
+let authPhase = "biometric"; // biometric | calling | otp_input | otp_exhausted
+let currentOtp = "";
+let otpAttempts = 0;
+const OTP_MAX_ATTEMPTS = 3;
 
 // ========== DOM Elements ==========
 const screens = {
@@ -43,6 +51,13 @@ const screens = {
     auth: document.getElementById("auth-screen"),
     home: document.getElementById("home-screen"),
     settings: document.getElementById("settings-screen")
+};
+
+const authPhases = {
+    biometric:  document.getElementById("auth-biometric"),
+    calling:    document.getElementById("auth-calling"),
+    otpInput:   document.getElementById("auth-otp-input"),
+    otpExhaust: document.getElementById("auth-otp-exhausted")
 };
 
 const els = {
@@ -76,6 +91,85 @@ function showScreen(name) {
     currentScreen = name;
 }
 
+// ========== OTP Auth Flow ==========
+function generateOtp() {
+    currentOtp = String(Math.floor(1000 + Math.random() * 9000));
+    otpAttempts = 0;
+    return currentOtp;
+}
+
+function showAuthPhase(phase) {
+    Object.values(authPhases).forEach(el => el.classList.add("hidden"));
+    authPhases[phase].classList.remove("hidden");
+    authPhase = phase; // stored key matches authPhases keys: biometric|calling|otpInput|otpExhaust
+}
+
+function startOtpFlow() {
+    const otp = generateOtp();
+    showAuthPhase("calling");
+    const otpSpoken = otp.split("").join(", ");
+    speak(
+        `This is an automated call from Saral Bank. Your one-time password is ${otpSpoken}. Please say the OTP to verify.`,
+        () => {
+            showAuthPhase("otpInput");
+            updateOtpAttemptsText();
+            speak("Please say your 4-digit OTP now.");
+        }
+    );
+}
+
+function updateOtpAttemptsText() {
+    const left = OTP_MAX_ATTEMPTS - otpAttempts;
+    const el = document.getElementById("otp-attempts-text");
+    if (el) {
+        el.textContent = `${left} attempt${left === 1 ? "" : "s"} remaining`;
+        el.style.color = left === 1 ? "var(--error-red, #EF5350)" : "";
+    }
+}
+
+function normalizeOtpInput(text) {
+    const wordMap = { zero:"0", one:"1", two:"2", three:"3", four:"4",
+                      five:"5", six:"6", seven:"7", eight:"8", nine:"9" };
+    let result = text.toLowerCase();
+    Object.entries(wordMap).forEach(([word, digit]) => {
+        result = result.replace(new RegExp(`\\b${word}\\b`, "g"), digit);
+    });
+    return result.replace(/\D/g, "");
+}
+
+function verifyOtpInput(spoken) {
+    const digits = normalizeOtpInput(spoken);
+    otpAttempts++;
+
+    if (digits === currentOtp) {
+        vibrateSuccess();
+        speak("OTP verified successfully. Welcome user.", () => {
+            speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or help.");
+        });
+        setTimeout(() => showScreen("home"), 800);
+    } else if (otpAttempts >= OTP_MAX_ATTEMPTS) {
+        showAuthPhase("otpExhaust");
+        speak("Incorrect OTP entered 3 times. Say yes to regenerate a new OTP, or no to cancel.");
+    } else {
+        const left = OTP_MAX_ATTEMPTS - otpAttempts;
+        updateOtpAttemptsText();
+        speak(
+            `Incorrect OTP. You have ${left} attempt${left === 1 ? "" : "s"} left. Please try again.`,
+            () => speak("Please say your OTP now.")
+        );
+    }
+}
+
+function handleRegenerateResponse(spoken) {
+    const lower = spoken.toLowerCase();
+    if (/yes|haan|ok|sure|proceed/.test(lower)) {
+        startOtpFlow();
+    } else {
+        showAuthPhase("biometric");
+        speak("Authentication cancelled. Please tap the button to try again.");
+    }
+}
+
 // ========== Voice Status Banner ==========
 function showVoiceStatus(message, type) {
     els.voiceStatus.className = "voice-status status-" + type;
@@ -94,6 +188,47 @@ function hideVoiceStatus() {
     els.voiceStatus.classList.add("hidden");
 }
 
+// ========== Voice Selection ==========
+// Priority: Google/Microsoft neural > Google en > Microsoft en > en-IN > en-US > any en
+function pickBestVoice(voices) {
+    const tiers = [
+        v => /google.*natural|google.*wavenet/i.test(v.name),
+        v => /microsoft.*natural|microsoft.*neural/i.test(v.name),
+        v => /google/i.test(v.name) && v.lang === "en-IN",
+        v => /google/i.test(v.name) && v.lang === "en-GB",
+        v => /google/i.test(v.name) && v.lang === "en-US",
+        v => /google/i.test(v.name) && v.lang.startsWith("en"),
+        v => /microsoft/i.test(v.name) && v.lang.startsWith("en"),
+        v => v.lang === "en-IN",
+        v => v.lang === "en-GB",
+        v => v.lang === "en-US",
+        v => v.lang.startsWith("en"),
+    ];
+    for (const test of tiers) {
+        const match = voices.find(test);
+        if (match) return match;
+    }
+    return voices[0] || null;
+}
+
+function loadVoices() {
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return;
+    if (!selectedVoice) selectedVoice = pickBestVoice(voices);
+    populateVoiceDropdown(voices);
+}
+
+function populateVoiceDropdown(voices) {
+    const sel = document.getElementById("voice-select");
+    if (!sel) return;
+    const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+    sel.innerHTML = englishVoices.map((v, i) =>
+        `<option value="${i}" ${selectedVoice && v.name === selectedVoice.name ? "selected" : ""}>
+            ${v.name} (${v.lang})
+        </option>`
+    ).join("");
+}
+
 // ========== Text-to-Speech ==========
 function speak(text, onEnd) {
     if (!("speechSynthesis" in window)) {
@@ -107,12 +242,12 @@ function speak(text, onEnd) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = selectedLang;
     utterance.rate = speechRate;
-    utterance.pitch = 1.0;
+    utterance.pitch = selectedPitch;
 
+    // Use the user-selected or auto-picked voice
     const voices = window.speechSynthesis.getVoices();
-    const indianVoice = voices.find(v => v.lang === "en-IN") ||
-                        voices.find(v => v.lang.startsWith("en"));
-    if (indianVoice) utterance.voice = indianVoice;
+    const voice = selectedVoice || pickBestVoice(voices);
+    if (voice) utterance.voice = voice;
 
     if (onEnd) utterance.onend = onEnd;
 
@@ -272,6 +407,8 @@ function extractTransactionCount(lower) {
     if (/last\s+(ten|10)/.test(lower) || /last\s+10\s+transaction/.test(lower)) return 10;
     if (/last\s+(five|5)/.test(lower)  || /last\s+5\s+transaction/.test(lower))  return 5;
     if (/last\s+(one|1)/.test(lower)   || /last\s+1\s+transaction/.test(lower))  return 1;
+    // "last transaction" / "last transactions" with no number = the most recent one
+    if (/last\s+transactions?(\s|$)/.test(lower) && !/last\s+\d/.test(lower)) return 1;
     // bare numbers when awaiting count selection
     if (awaitingTransactionCount) {
         if (/^(one|1)$/.test(lower))  return 1;
@@ -345,6 +482,19 @@ function parseIntent(text) {
 
 // ========== Intent Handlers ==========
 function handleVoiceInput(text) {
+    // Route to OTP handlers when on the auth screen
+    if (currentScreen === "auth") {
+        if (authPhase === "otpInput") {
+            verifyOtpInput(text);
+            return;
+        }
+        if (authPhase === "otpExhaust") {
+            handleRegenerateResponse(text);
+            return;
+        }
+        return;
+    }
+
     addRecentCommand(text);
     showProcessing(true);
 
@@ -589,23 +739,73 @@ function formatAmount(amount) {
 function startApp() {
     showScreen("splash");
     speak("Welcome to Saral. Your accessible banking assistant.", () => {
-        setTimeout(() => showScreen("auth"), 500);
+        setTimeout(() => {
+            showScreen("auth");
+            speak("Please press your finger for authentication.");
+        }, 500);
     });
 
     setTimeout(() => {
-        if (currentScreen === "splash") showScreen("auth");
+        if (currentScreen === "splash") {
+            showScreen("auth");
+            speak("Please press your finger for authentication.");
+        }
     }, 4000);
 }
 
 // ========== Event Listeners ==========
 
-// Auth
+// Auth — biometric tap triggers OTP flow
 els.authBtn.addEventListener("click", () => {
     vibrate(100);
-    speak("Authentication successful. Welcome.", () => {
-        speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or ask for help. You can also type commands in the text box below.");
+    speak("Biometric scan successful. Sending a verification code to your registered number.", () => {
+        startOtpFlow();
     });
-    setTimeout(() => showScreen("home"), 500);
+});
+
+// OTP mic — say OTP aloud
+document.getElementById("otp-mic-btn").addEventListener("click", () => {
+    vibrate(50);
+    if (isListening) {
+        stopListening();
+    } else {
+        startListening();
+    }
+});
+
+// OTP typed input
+document.getElementById("otp-text-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val) { verifyOtpInput(val); e.target.value = ""; }
+    }
+});
+document.getElementById("otp-text-send").addEventListener("click", () => {
+    const inp = document.getElementById("otp-text-input");
+    const val = inp.value.trim();
+    if (val) { verifyOtpInput(val); inp.value = ""; }
+});
+
+// Regenerate mic
+document.getElementById("otp-regen-mic-btn").addEventListener("click", () => {
+    vibrate(50);
+    if (isListening) {
+        stopListening();
+    } else {
+        startListening();
+    }
+});
+
+// Regenerate / Cancel buttons
+document.getElementById("otp-regen-btn").addEventListener("click", () => {
+    vibrate(50);
+    startOtpFlow();
+});
+document.getElementById("otp-cancel-btn").addEventListener("click", () => {
+    vibrate(50);
+    showAuthPhase("biometric");
+    speak("Authentication cancelled. Please tap the button to try again.");
 });
 
 // Mic button
@@ -663,14 +863,36 @@ document.querySelectorAll(".lang-btn").forEach(btn => {
 // Speech rate
 els.speechRateSlider.addEventListener("input", (e) => {
     speechRate = parseFloat(e.target.value);
-    els.speedValue.textContent = speechRate.toFixed(1) + "x";
+    els.speedValue.textContent = speechRate.toFixed(2) + "x";
 });
 
-// Load voices
+// Load voices — Chrome fires onvoiceschanged asynchronously
 if ("speechSynthesis" in window) {
-    window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-    };
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices(); // also try immediately (Firefox loads synchronously)
+}
+
+// Voice selector
+const voiceSelectEl = document.getElementById("voice-select");
+if (voiceSelectEl) {
+    voiceSelectEl.addEventListener("change", (e) => {
+        const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith("en"));
+        selectedVoice = voices[parseInt(e.target.value)] || null;
+        speak("This is how I sound now.");
+    });
+}
+
+// Pitch slider
+const pitchSlider = document.getElementById("pitch-slider");
+const pitchValue = document.getElementById("pitch-value");
+if (pitchSlider) {
+    pitchSlider.addEventListener("input", (e) => {
+        selectedPitch = parseFloat(e.target.value);
+        if (pitchValue) pitchValue.textContent = selectedPitch.toFixed(1);
+    });
+    pitchSlider.addEventListener("change", () => {
+        speak("This is how I sound now.");
+    });
 }
 
 // ========== Initialize ==========

@@ -128,6 +128,31 @@ class VoiceIntentParserTest {
     }
 
     @Test
+    fun parsesLastTransaction_bare_returnsCount1() {
+        val intent = parser.parse("last transaction") as VoiceIntent.TransactionCount
+        assertEquals(1, intent.count)
+    }
+
+    @Test
+    fun parsesLastTransactions_plural_bare_returnsCount1() {
+        val intent = parser.parse("last transactions") as VoiceIntent.TransactionCount
+        assertEquals(1, intent.count)
+    }
+
+    @Test
+    fun parsesShowLastTransaction_returnsCount1() {
+        val intent = parser.parse("show last transaction") as VoiceIntent.TransactionCount
+        assertEquals(1, intent.count)
+    }
+
+    @Test
+    fun parsesLastFiveTransactions_notAffectedByBareRule() {
+        // "last 5 transactions" must still return 5, not 1
+        val intent = parser.parse("last 5 transactions") as VoiceIntent.TransactionCount
+        assertEquals(5, intent.count)
+    }
+
+    @Test
     fun parsesLastFive_wordForm() {
         val intent = parser.parse("last five transactions") as VoiceIntent.TransactionCount
         assertEquals(5, intent.count)

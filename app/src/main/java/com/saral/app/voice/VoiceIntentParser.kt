@@ -145,6 +145,8 @@ class VoiceIntentParser @Inject constructor() {
             lower.contains("last ten") || lower.contains("last 10") -> 10
             lower.contains("last five") || lower.contains("last 5") -> 5
             lower.contains("last one") || lower.contains("last 1") -> 1
+            // "last transaction" / "last transactions" with no number = most recent one
+            Regex("last\\s+transactions?\\b").containsMatchIn(lower) -> 1
             // Numeric "last N" catch-all
             else -> Regex("last\\s+(\\d+)", RegexOption.IGNORE_CASE)
                 .find(input)?.groupValues?.get(1)?.toIntOrNull()

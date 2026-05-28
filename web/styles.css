@@ -127,6 +127,97 @@ html, body {
     font-size: 24px;
 }
 
+/* ========== OTP Auth Phases ========== */
+.call-icon .material-icons-round {
+    font-size: 100px;
+    color: var(--accent-green, #4CAF50);
+}
+
+.otp-icon .material-icons-round {
+    font-size: 80px;
+    color: var(--accent-blue);
+}
+
+.warning-icon .material-icons-round {
+    font-size: 80px;
+    color: var(--error-red, #EF5350);
+}
+
+.otp-attempts {
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.otp-mic-active {
+    background: var(--accent-blue);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.otp-mic-active.listening {
+    background: var(--accent-green, #4CAF50);
+}
+
+.otp-text-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 280px;
+}
+
+.otp-text-field {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 20px;
+    letter-spacing: 6px;
+    border: 2px solid var(--accent-blue);
+    border-radius: 12px;
+    background: var(--navy-medium, #132240);
+    color: var(--text-white);
+    text-align: center;
+    outline: none;
+}
+
+.otp-send-btn {
+    padding: 12px;
+    background: var(--accent-blue);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-white);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.otp-action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 320px;
+}
+
+.otp-secondary-btn {
+    flex: 1;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: transparent;
+    border: 2px solid var(--accent-blue);
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.otp-action-row .auth-button {
+    flex: 1;
+    margin-top: 0;
+    justify-content: center;
+    padding: 14px 12px;
+    font-size: 15px;
+}
+
 /* ========== Home Screen ========== */
 .home-container {
     width: 100%;
@@ -605,6 +696,32 @@ html, body {
 
 .lang-btn.active {
     background: var(--accent-blue);
+}
+
+/* Voice dropdown */
+.voice-select-dropdown {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: var(--navy-medium, #132240);
+    color: var(--text-white);
+    border: 1.5px solid var(--accent-blue);
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+}
+
+.voice-select-dropdown option {
+    background: var(--navy-dark, #0A1628);
+    color: var(--text-white);
+}
+
+#pitch-value {
+    font-size: 16px;
+    color: var(--accent-blue);
+    font-weight: 600;
+    min-width: 40px;
 }
 
 /* Speed control */

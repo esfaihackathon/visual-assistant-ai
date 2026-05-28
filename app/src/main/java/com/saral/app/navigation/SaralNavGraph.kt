@@ -1,11 +1,15 @@
 package com.saral.app.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.saral.app.presentation.auth.AuthScreen
+import com.saral.app.presentation.auth.AuthStep
+import com.saral.app.presentation.auth.AuthViewModel
 import com.saral.app.presentation.home.HomeScreen
 import com.saral.app.presentation.home.HomeViewModel
 import com.saral.app.presentation.settings.SettingsScreen
@@ -24,7 +28,10 @@ fun SaralNavGraph(
     onSpeak: (String) -> Unit,
     onAuthenticate: () -> Unit,
     onMicClick: () -> Unit,
-    homeViewModel: HomeViewModel
+    onOtpMicClick: () -> Unit,
+    isListening: Boolean,
+    homeViewModel: HomeViewModel,
+    authViewModel: AuthViewModel
 ) {
     NavHost(
         navController = navController,
@@ -42,9 +49,27 @@ fun SaralNavGraph(
         }
 
         composable(Routes.AUTH) {
+            val authStep by authViewModel.authStep.collectAsState()
+
+            LaunchedEffect(authStep) {
+                when (authStep) {
+                    is AuthStep.BiometricPending ->
+                        onSpeak("Please press your finger for authentication.")
+                    is AuthStep.Success ->
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.AUTH) { inclusive = true }
+                        }
+                    else -> Unit
+                }
+            }
+
             AuthScreen(
+                authStep = authStep,
+                isListening = isListening,
                 onAuthenticate = onAuthenticate,
-                onSpeak = onSpeak
+                onOtpMicClick = onOtpMicClick,
+                onRegenerate = { authViewModel.onVoiceInput("yes") },
+                onCancel = { authViewModel.onVoiceInput("no") }
             )
         }
 
