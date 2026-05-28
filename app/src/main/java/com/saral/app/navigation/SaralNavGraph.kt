@@ -10,16 +10,20 @@ import androidx.navigation.compose.composable
 import com.saral.app.presentation.auth.AuthScreen
 import com.saral.app.presentation.auth.AuthStep
 import com.saral.app.presentation.auth.AuthViewModel
+import com.saral.app.presentation.home.HomeNavigationEvent
 import com.saral.app.presentation.home.HomeScreen
 import com.saral.app.presentation.home.HomeViewModel
 import com.saral.app.presentation.settings.SettingsScreen
 import com.saral.app.presentation.splash.SplashScreen
+import com.saral.app.presentation.transfer.TransferScreen
+import com.saral.app.presentation.transfer.TransferViewModel
 
 object Routes {
     const val SPLASH = "splash"
     const val AUTH = "auth"
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val TRANSFER = "transfer"
 }
 
 @Composable
@@ -39,9 +43,12 @@ fun SaralNavGraph(
     onSpeechRateChanged: (Float) -> Unit,
     onVoiceSelected: (String) -> Unit,
     onHapticToggled: (Boolean) -> Unit,
+    onTransferMicClick: () -> Unit,
+    onRequestTransferBiometric: () -> Unit,
     isListening: Boolean,
     homeViewModel: HomeViewModel,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    transferViewModel: TransferViewModel
 ) {
     NavHost(
         navController = navController,
@@ -79,6 +86,16 @@ fun SaralNavGraph(
         }
 
         composable(Routes.HOME) {
+            // Observe navigation events from HomeViewModel
+            LaunchedEffect(homeViewModel) {
+                homeViewModel.navigationEvent.collect { event ->
+                    when (event) {
+                        is HomeNavigationEvent.NavigateToTransfer ->
+                            navController.navigate(Routes.TRANSFER)
+                    }
+                }
+            }
+
             HomeScreen(
                 viewModel = homeViewModel,
                 onMicClick = onMicClick,
@@ -103,6 +120,16 @@ fun SaralNavGraph(
                 onSpeechRateChanged = onSpeechRateChanged,
                 onVoiceSelected = onVoiceSelected,
                 onHapticToggled = onHapticToggled
+            )
+        }
+
+        composable(Routes.TRANSFER) {
+            TransferScreen(
+                viewModel = transferViewModel,
+                isListening = isListening,
+                onMicClick = onTransferMicClick,
+                onRequestBiometric = onRequestTransferBiometric,
+                onBack = { navController.popBackStack() }
             )
         }
     }

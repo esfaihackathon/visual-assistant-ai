@@ -2,6 +2,7 @@ package com.saral.app.data.mock
 
 import com.saral.app.data.repository.BankingRepository
 import com.saral.app.domain.models.BankAccount
+import com.saral.app.domain.models.Beneficiary
 import com.saral.app.domain.models.ChequeBookRequest
 import com.saral.app.domain.models.Transaction
 import com.saral.app.domain.models.TransactionType
@@ -129,5 +130,48 @@ class MockBankingRepository @Inject constructor() : BankingRepository {
         return allTransactions.filter { txn ->
             txn.description.contains(keyword, ignoreCase = true)
         }
+    }
+
+    private val beneficiaries = listOf(
+        Beneficiary(
+            id = "BEN001",
+            name = "Rahul Sharma",
+            accountLast4 = "1234",
+            bankName = "SBI",
+            ifscCode = "SBIN0001234"
+        ),
+        Beneficiary(
+            id = "BEN002",
+            name = "Priya Gupta",
+            accountLast4 = "5678",
+            bankName = "HDFC Bank",
+            ifscCode = "HDFC0005678"
+        ),
+        Beneficiary(
+            id = "BEN003",
+            name = "Amit Kumar",
+            accountLast4 = "9012",
+            bankName = "ICICI Bank",
+            ifscCode = "ICIC0009012"
+        ),
+        Beneficiary(
+            id = "BEN004",
+            name = "Sunita Verma",
+            accountLast4 = "3456",
+            bankName = "Axis Bank",
+            ifscCode = "UTIB0003456"
+        ),
+        Beneficiary(
+            id = "BEN005",
+            name = "Vikram Singh",
+            accountLast4 = "7890",
+            bankName = "Bank of Baroda",
+            ifscCode = "BARB0007890"
+        )
+    )
+
+    override suspend fun getBeneficiaries(): List<Beneficiary> {
+        delay(300)
+        return beneficiaries
     }
 }

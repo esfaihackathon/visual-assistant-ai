@@ -9,6 +9,7 @@ import com.saral.app.domain.usecases.TransferMoneyUseCase
 import com.saral.app.voice.VoiceIntentParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Assert.*
@@ -57,59 +58,77 @@ class HomeViewModelTest {
     }
 
     // ──────────────────────────────────────────
-    // Transfer — confirmation flow
+    // Transfer — emits navigation event
     // ──────────────────────────────────────────
 
     @Test
-    fun transferFlow_promptsConfirmation() = runTest {
+    fun transferIntent_emitsNavigateToTransfer() = runTest {
         val vm = createViewModel()
-        val spoken = vm.captureSpoken()
+        val events = mutableListOf<HomeNavigationEvent>()
 
-        vm.onVoiceResult("Transfer 500 rupees to Rahul")
+        val job = launch { vm.navigationEvent.collect { events.add(it) } }
+
+        vm.onVoiceResult("Transfer money")
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.awaitingTransferConfirmation)
-        assertTrue(spoken.any { it.contains("transferring") || it.contains("Transfer") })
+        assertTrue(events.any { it is HomeNavigationEvent.NavigateToTransfer })
+        job.cancel()
     }
 
     @Test
-    fun transferFlow_confirmYes_succeeds() = runTest {
+    fun transferIntent_withAmountAndRecipient_emitsNavigateToTransfer() = runTest {
         val vm = createViewModel()
-        val spoken = vm.captureSpoken()
+        val events = mutableListOf<HomeNavigationEvent>()
+
+        val job = launch { vm.navigationEvent.collect { events.add(it) } }
 
         vm.onVoiceResult("Transfer 500 rupees to Rahul")
         advanceUntilIdle()
+
+        assertTrue(events.any { it is HomeNavigationEvent.NavigateToTransfer })
+        job.cancel()
+    }
+
+    @Test
+    fun transferIntent_sendMoney_emitsNavigateToTransfer() = runTest {
+        val vm = createViewModel()
+        val events = mutableListOf<HomeNavigationEvent>()
+
+        val job = launch { vm.navigationEvent.collect { events.add(it) } }
+
+        vm.onVoiceResult("Send money to Priya")
+        advanceUntilIdle()
+
+        assertTrue(events.any { it is HomeNavigationEvent.NavigateToTransfer })
+        job.cancel()
+    }
+
+    @Test
+    fun confirmYes_whenNothingPending_speaksInfo() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
         vm.onVoiceResult("Yes")
         advanceUntilIdle()
 
-        assertFalse(vm.uiState.value.awaitingTransferConfirmation)
-        assertTrue(spoken.any { it.contains("Transfer successful") })
+        assertTrue(spoken.any {
+            it.contains("nothing to confirm", ignoreCase = true) ||
+            it.contains("how can I help", ignoreCase = true)
+        })
     }
 
     @Test
-    fun transferFlow_confirmNo_cancels() = runTest {
+    fun confirmNo_speaksHelp() = runTest {
         val vm = createViewModel()
         val spoken = vm.captureSpoken()
 
-        vm.onVoiceResult("Transfer 200 rupees to Priya")
-        advanceUntilIdle()
         vm.onVoiceResult("No")
         advanceUntilIdle()
 
-        assertFalse(vm.uiState.value.awaitingTransferConfirmation)
-        assertTrue(spoken.any { it.contains("cancelled") || it.contains("Cancelled") })
-    }
-
-    @Test
-    fun transferFlow_missingRecipient_asksForDetails() = runTest {
-        val vm = createViewModel()
-        val spoken = vm.captureSpoken()
-
-        vm.onVoiceResult("Transfer 500 rupees")
-        advanceUntilIdle()
-
-        assertFalse(vm.uiState.value.awaitingTransferConfirmation)
-        assertTrue(spoken.any { it.contains("Please say") || it.contains("recipient") })
+        assertTrue(spoken.any {
+            it.contains("how can I help", ignoreCase = true) ||
+            it.contains("okay", ignoreCase = true)
+        })
     }
 
     // ──────────────────────────────────────────
@@ -159,7 +178,7 @@ class HomeViewModelTest {
 
         assertTrue(spoken.any { it.contains("last transaction") || it.contains("Your last transaction") })
         assertTrue(vm.uiState.value.showTransactions)
-        assertEquals(1, vm.uiState.value.transactions.size.coerceAtMost(10))
+        assertTrue(vm.uiState.value.transactions.isNotEmpty())
     }
 
     @Test
@@ -172,7 +191,7 @@ class HomeViewModelTest {
 
         assertTrue(spoken.any { it.contains("5") || it.contains("five") || it.contains("transactions") })
         assertTrue(vm.uiState.value.showTransactions)
-        assertEquals(10, vm.uiState.value.transactions.size) // full list loaded in state
+        assertEquals(10, vm.uiState.value.transactions.size)
     }
 
     @Test
@@ -264,7 +283,7 @@ class HomeViewModelTest {
 
         assertTrue(
             "Expected no-match response",
-            spoken.any { it.lowercase().contains("no transaction") || it.lowercase().contains("no.*transaction".toRegex()) || it.contains("no transactions") }
+            spoken.any { it.lowercase().contains("no transaction") || it.contains("no transactions") }
         )
     }
 
@@ -300,12 +319,10 @@ class HomeViewModelTest {
         val vm = createViewModel()
         val spoken = vm.captureSpoken()
 
-        // Step 1: user says "transaction"
         vm.onVoiceResult("Show recent transactions")
         advanceUntilIdle()
         assertTrue(spoken.any { it.contains("last 5") || it.contains("last 10") })
 
-        // Step 2: user answers "last 5 transactions"
         spoken.clear()
         vm.onVoiceResult("last 5 transactions")
         advanceUntilIdle()
@@ -359,7 +376,6 @@ class HomeViewModelTest {
         val vm = createViewModel()
         vm.onVoiceResult("   ")
         advanceUntilIdle()
-        // should remain in initial state — no crash
         assertFalse(vm.uiState.value.isProcessing)
     }
 

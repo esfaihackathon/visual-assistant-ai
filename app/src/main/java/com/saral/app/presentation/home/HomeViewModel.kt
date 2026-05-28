@@ -12,12 +12,19 @@ import com.saral.app.domain.usecases.SearchTransactionsUseCase
 import com.saral.app.domain.usecases.TransferMoneyUseCase
 import com.saral.app.voice.VoiceIntentParser
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed class HomeNavigationEvent {
+    object NavigateToTransfer : HomeNavigationEvent()
+}
 
 data class HomeUiState(
     val isListening: Boolean = false,
@@ -26,10 +33,7 @@ data class HomeUiState(
     val isProcessing: Boolean = false,
     val recentCommands: List<String> = emptyList(),
     val transactions: List<Transaction> = emptyList(),
-    val showTransactions: Boolean = false,
-    val awaitingTransferConfirmation: Boolean = false,
-    val pendingTransferAmount: Double = 0.0,
-    val pendingTransferRecipient: String = ""
+    val showTransactions: Boolean = false
 )
 
 @HiltViewModel
@@ -44,6 +48,9 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val _navigationEvent = MutableSharedFlow<HomeNavigationEvent>()
+    val navigationEvent: SharedFlow<HomeNavigationEvent> = _navigationEvent.asSharedFlow()
 
     private var speakCallback: ((String) -> Unit)? = null
 
@@ -65,15 +72,15 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             when (intent) {
                 is VoiceIntent.CheckBalance -> handleCheckBalance()
-                is VoiceIntent.TransferMoney -> handleTransfer(intent)
+                is VoiceIntent.TransferMoney -> _navigationEvent.emit(HomeNavigationEvent.NavigateToTransfer)
                 is VoiceIntent.RequestChequeBook -> handleChequeBook()
                 is VoiceIntent.RecentTransactions -> handleAskTransactionCount()
                 is VoiceIntent.AskTransactionCount -> handleAskTransactionCount()
                 is VoiceIntent.TransactionCount -> handleTransactionCount(intent.count)
                 is VoiceIntent.QueryTransaction -> handleQueryTransaction(intent.keyword)
                 is VoiceIntent.Help -> handleHelp()
-                is VoiceIntent.ConfirmYes -> handleConfirmYes()
-                is VoiceIntent.ConfirmNo -> handleConfirmNo()
+                is VoiceIntent.ConfirmYes -> respond("There is nothing to confirm right now. How can I help you?")
+                is VoiceIntent.ConfirmNo -> respond("Okay. How can I help you?")
                 is VoiceIntent.Unknown -> handleUnknown()
             }
         }
@@ -86,65 +93,15 @@ class HomeViewModel @Inject constructor(
         respond(response)
     }
 
-    private fun handleTransfer(intent: VoiceIntent.TransferMoney) {
-        val amount = intent.amount
-        val recipient = intent.recipient
-
-        if (amount == null || recipient == null) {
-            respond("Please say the amount and recipient. For example, transfer 500 rupees to Rahul.")
-            return
-        }
-
-        _uiState.update {
-            it.copy(
-                awaitingTransferConfirmation = true,
-                pendingTransferAmount = amount,
-                pendingTransferRecipient = recipient
-            )
-        }
-
-        val amountFormatted = formatAmount(amount)
-        respond("You are transferring $amountFormatted rupees to $recipient. Do you want to continue?")
-    }
-
-    private suspend fun handleConfirmYes() {
-        val state = _uiState.value
-        if (state.awaitingTransferConfirmation) {
-            _uiState.update { it.copy(isProcessing = true) }
-            val result = transferMoneyUseCase(state.pendingTransferAmount, state.pendingTransferRecipient)
-            _uiState.update {
-                it.copy(awaitingTransferConfirmation = false)
-            }
-            if (result.success) {
-                respond("Transfer successful. Transaction reference number ${result.txnId}.")
-            } else {
-                respond("Transfer failed. Please try again.")
-            }
-        } else {
-            respond("There is nothing to confirm right now.")
-        }
-    }
-
-    private fun handleConfirmNo() {
-        if (_uiState.value.awaitingTransferConfirmation) {
-            _uiState.update { it.copy(awaitingTransferConfirmation = false) }
-            respond("Transfer cancelled.")
-        } else {
-            respond("Okay. How can I help you?")
-        }
-    }
-
     private suspend fun handleChequeBook() {
         val result = requestChequeBookUseCase()
         respond("Your cheque book request has been registered successfully and will be delivered within ${result.estimatedDeliveryDays} working days.")
     }
 
-    // Prompt the user to choose how many transactions to hear
     private fun handleAskTransactionCount() {
         respond("Do you want to hear the last transaction, last 5 transactions, or last 10 transactions?")
     }
 
-    // Read out the requested number of transactions via voice
     private suspend fun handleTransactionCount(count: Int) {
         val transactions = getRecentTransactionsUseCase()
         val subset = transactions.take(count)
@@ -171,7 +128,6 @@ class HomeViewModel @Inject constructor(
         respond(response)
     }
 
-    // Search transactions by keyword and respond with voice
     private suspend fun handleQueryTransaction(keyword: String) {
         val matches = searchTransactionsUseCase(keyword)
 
@@ -180,7 +136,6 @@ class HomeViewModel @Inject constructor(
             return
         }
 
-        // Report the most recent matching transaction
         val t = matches.first()
         val amountFormatted = formatAmount(t.amount)
         val response = if (t.type == TransactionType.CREDIT) {

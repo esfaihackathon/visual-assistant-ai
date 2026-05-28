@@ -21,10 +21,8 @@
         </div>
     </div>
 
-    <!-- Auth Screen -->
+    <!-- Auth Screen (Biometric only) -->
     <div id="auth-screen" class="screen">
-
-        <!-- Phase 1: Biometric -->
         <div id="auth-biometric" class="auth-content">
             <div class="fingerprint-icon pulse">
                 <span class="material-icons-round">fingerprint</span>
@@ -36,59 +34,6 @@
                 Tap to Authenticate (Demo)
             </button>
         </div>
-
-        <!-- Phase 2: Simulated phone call -->
-        <div id="auth-calling" class="auth-content hidden">
-            <div class="call-icon pulse">
-                <span class="material-icons-round">call</span>
-            </div>
-            <h2>Calling your registered number...</h2>
-            <p class="auth-subtitle">Listen to the automated call for your OTP</p>
-            <div class="spinner" style="margin:32px auto 0;"></div>
-        </div>
-
-        <!-- Phase 3: OTP input -->
-        <div id="auth-otp-input" class="auth-content hidden">
-            <div class="otp-icon">
-                <span class="material-icons-round">pin</span>
-            </div>
-            <h2>Enter OTP</h2>
-            <p class="auth-subtitle">Say your 4-digit one-time password</p>
-            <p id="otp-attempts-text" class="auth-subtitle otp-attempts">3 attempts remaining</p>
-            <button id="otp-mic-btn" class="auth-button otp-mic-active" aria-label="Tap to say OTP">
-                <span class="material-icons-round">mic</span>
-                Tap to Say OTP
-            </button>
-            <div class="otp-text-row">
-                <input type="text" id="otp-text-input" class="otp-text-field"
-                       placeholder="Or type OTP here" maxlength="6"
-                       aria-label="Type your OTP">
-                <button id="otp-text-send" class="otp-send-btn" aria-label="Submit OTP">
-                    <span class="material-icons-round">send</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Phase 4: OTP exhausted -->
-        <div id="auth-otp-exhausted" class="auth-content hidden">
-            <div class="warning-icon">
-                <span class="material-icons-round">warning</span>
-            </div>
-            <h2>Too many incorrect attempts</h2>
-            <p class="auth-subtitle">Say "yes" to regenerate OTP or "no" to cancel</p>
-            <button id="otp-regen-mic-btn" class="auth-button otp-mic-active" aria-label="Say yes or no">
-                <span class="material-icons-round">mic</span>
-                Say Yes or No
-            </button>
-            <div class="otp-action-row">
-                <button id="otp-cancel-btn" class="otp-secondary-btn">Cancel</button>
-                <button id="otp-regen-btn" class="auth-button">
-                    <span class="material-icons-round">refresh</span>
-                    Regenerate OTP
-                </button>
-            </div>
-        </div>
-
     </div>
 
     <!-- Home Screen -->
@@ -269,6 +214,126 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Transfer Screen -->
+    <div id="transfer-screen" class="screen">
+        <div class="home-container">
+
+            <!-- Top bar -->
+            <div class="top-bar">
+                <button id="transfer-back-btn" class="icon-btn" aria-label="Go back to home">
+                    <span class="material-icons-round">arrow_back</span>
+                </button>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span class="material-icons-round" style="color:var(--accent-blue,#42A5F5)">swap_horiz</span>
+                    <h2 style="font-size:1.2rem;font-weight:700;margin:0">Transfer Money</h2>
+                </div>
+                <div style="width:40px"></div>
+            </div>
+
+            <!-- AI Response -->
+            <div id="transfer-response-card" class="response-card hidden" role="status" aria-live="polite">
+                <span class="material-icons-round response-icon">volume_up</span>
+                <p id="transfer-response-text"></p>
+            </div>
+
+            <!-- Beneficiary List (SelectingBeneficiary phase) -->
+            <div id="transfer-beneficiary-section" class="transactions-card hidden">
+                <h3>Your Beneficiaries</h3>
+                <div id="transfer-beneficiary-list"></div>
+            </div>
+
+            <!-- Selected Beneficiary (EnterAmount phase) -->
+            <div id="transfer-selected-card" class="transactions-card hidden">
+                <h3>Sending To</h3>
+                <div id="transfer-selected-content"></div>
+            </div>
+
+            <!-- Confirm Transfer (Confirming phase) -->
+            <div id="transfer-confirm-card" class="transactions-card hidden">
+                <h3>Confirm Transfer</h3>
+                <div id="transfer-confirm-content"></div>
+                <div style="display:flex;gap:12px;margin-top:16px">
+                    <button id="transfer-confirm-no-btn" class="quick-cmd"
+                            style="flex:1;background:#EF5350;color:#fff;border:none"
+                            aria-label="Cancel transfer">
+                        No, Cancel
+                    </button>
+                    <button id="transfer-confirm-yes-btn" class="quick-cmd"
+                            style="flex:1;background:#66BB6A;color:#fff;border:none"
+                            aria-label="Confirm transfer">
+                        Yes, Proceed
+                    </button>
+                </div>
+            </div>
+
+            <!-- Biometric Auth (AwaitingBiometric phase) -->
+            <div id="transfer-biometric-card" class="transactions-card hidden" style="text-align:center">
+                <div class="fingerprint-icon pulse" style="margin:0 auto 16px">
+                    <span class="material-icons-round" style="font-size:52px;color:var(--accent-blue,#42A5F5)">fingerprint</span>
+                </div>
+                <h3 style="margin-bottom:8px">Authenticate to Transfer</h3>
+                <p id="transfer-biometric-detail" class="auth-subtitle" style="margin-bottom:20px"></p>
+                <button id="transfer-biometric-btn" class="auth-button" style="width:100%"
+                        aria-label="Tap to authenticate with fingerprint">
+                    <span class="material-icons-round">lock_open</span>
+                    Tap to Authenticate (Demo)
+                </button>
+            </div>
+
+            <!-- Transfer Complete -->
+            <div id="transfer-complete-card" class="transactions-card hidden" style="text-align:center">
+                <span class="material-icons-round"
+                      style="font-size:52px;color:#66BB6A;display:block;margin-bottom:8px">check_circle</span>
+                <h3 style="color:#66BB6A;margin-bottom:4px">Transfer Successful!</h3>
+                <div id="transfer-complete-content"></div>
+                <button id="transfer-done-btn" class="auth-button"
+                        style="margin-top:16px;width:100%" aria-label="Done, go back to home">
+                    <span class="material-icons-round">home</span>
+                    Done
+                </button>
+            </div>
+
+            <!-- Recognized Text -->
+            <div id="transfer-recognized-card" class="recognized-card hidden">
+                <p id="transfer-recognized-text"></p>
+            </div>
+
+            <div class="spacer"></div>
+
+            <!-- Listening Indicator -->
+            <div id="transfer-listening-indicator" class="listening-indicator hidden">
+                <div class="listening-waves">
+                    <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <p>Listening...</p>
+            </div>
+
+            <!-- Processing -->
+            <div id="transfer-processing-indicator" class="processing-indicator hidden">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Mic Button -->
+            <button id="transfer-mic-btn" class="mic-button" aria-label="Tap to speak your response">
+                <span class="material-icons-round">mic</span>
+            </button>
+            <p class="mic-hint">Tap to speak</p>
+
+            <!-- Text Input Fallback -->
+            <div class="text-input-area">
+                <div class="text-input-wrapper">
+                    <input type="text" id="transfer-text-input" class="text-input"
+                           placeholder="Or type here (name / amount / yes / no)..."
+                           aria-label="Type your response">
+                    <button id="transfer-send-btn" class="send-btn" aria-label="Send">
+                        <span class="material-icons-round">send</span>
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 

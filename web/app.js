@@ -26,6 +26,14 @@ const mockContacts = {
     "neha": "Neha"
 };
 
+const mockBeneficiaries = [
+    { id: "BEN001", name: "Rahul Sharma",  accountLast4: "1234", bank: "SBI" },
+    { id: "BEN002", name: "Priya Gupta",   accountLast4: "5678", bank: "HDFC Bank" },
+    { id: "BEN003", name: "Amit Kumar",    accountLast4: "9012", bank: "ICICI Bank" },
+    { id: "BEN004", name: "Sunita Verma",  accountLast4: "3456", bank: "Axis Bank" },
+    { id: "BEN005", name: "Vikram Singh",  accountLast4: "7890", bank: "Bank of Baroda" }
+];
+
 // ========== State ==========
 let currentScreen = "splash";
 let isListening = false;
@@ -33,31 +41,24 @@ let awaitingConfirmation = false;
 let awaitingTransactionCount = false;
 let pendingTransfer = { amount: 0, recipient: "" };
 let recentCommands = [];
+
+// Transfer screen state
+let currentTransferPhase = null; // 'selecting' | 'entering_amount' | 'confirming' | 'authenticating' | 'complete'
+let selectedBeneficiary = null;
+let pendingTransferAmount = 0;
 let speechRate = 0.88;
 let selectedPitch = 0.95;
 let selectedLang = "en-IN";
 let selectedVoice = null;
 let voiceSupported = false;
 
-// OTP auth state
-let authPhase = "biometric"; // biometric | calling | otp_input | otp_exhausted
-let currentOtp = "";
-let otpAttempts = 0;
-const OTP_MAX_ATTEMPTS = 3;
-
 // ========== DOM Elements ==========
 const screens = {
     splash: document.getElementById("splash-screen"),
     auth: document.getElementById("auth-screen"),
     home: document.getElementById("home-screen"),
-    settings: document.getElementById("settings-screen")
-};
-
-const authPhases = {
-    biometric:  document.getElementById("auth-biometric"),
-    calling:    document.getElementById("auth-calling"),
-    otpInput:   document.getElementById("auth-otp-input"),
-    otpExhaust: document.getElementById("auth-otp-exhausted")
+    settings: document.getElementById("settings-screen"),
+    transfer: document.getElementById("transfer-screen")
 };
 
 const els = {
@@ -89,85 +90,6 @@ function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove("active"));
     screens[name].classList.add("active");
     currentScreen = name;
-}
-
-// ========== OTP Auth Flow ==========
-function generateOtp() {
-    currentOtp = String(Math.floor(1000 + Math.random() * 9000));
-    otpAttempts = 0;
-    return currentOtp;
-}
-
-function showAuthPhase(phase) {
-    Object.values(authPhases).forEach(el => el.classList.add("hidden"));
-    authPhases[phase].classList.remove("hidden");
-    authPhase = phase; // stored key matches authPhases keys: biometric|calling|otpInput|otpExhaust
-}
-
-function startOtpFlow() {
-    const otp = generateOtp();
-    showAuthPhase("calling");
-    const otpSpoken = otp.split("").join(", ");
-    speak(
-        `This is an automated call from Saral Bank. Your one-time password is ${otpSpoken}. Please say the OTP to verify.`,
-        () => {
-            showAuthPhase("otpInput");
-            updateOtpAttemptsText();
-            speak("Please say your 4-digit OTP now.");
-        }
-    );
-}
-
-function updateOtpAttemptsText() {
-    const left = OTP_MAX_ATTEMPTS - otpAttempts;
-    const el = document.getElementById("otp-attempts-text");
-    if (el) {
-        el.textContent = `${left} attempt${left === 1 ? "" : "s"} remaining`;
-        el.style.color = left === 1 ? "var(--error-red, #EF5350)" : "";
-    }
-}
-
-function normalizeOtpInput(text) {
-    const wordMap = { zero:"0", one:"1", two:"2", three:"3", four:"4",
-                      five:"5", six:"6", seven:"7", eight:"8", nine:"9" };
-    let result = text.toLowerCase();
-    Object.entries(wordMap).forEach(([word, digit]) => {
-        result = result.replace(new RegExp(`\\b${word}\\b`, "g"), digit);
-    });
-    return result.replace(/\D/g, "");
-}
-
-function verifyOtpInput(spoken) {
-    const digits = normalizeOtpInput(spoken);
-    otpAttempts++;
-
-    if (digits === currentOtp) {
-        vibrateSuccess();
-        speak("OTP verified successfully. Welcome user.", () => {
-            speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or help.");
-        });
-        setTimeout(() => showScreen("home"), 800);
-    } else if (otpAttempts >= OTP_MAX_ATTEMPTS) {
-        showAuthPhase("otpExhaust");
-        speak("Incorrect OTP entered 3 times. Say yes to regenerate a new OTP, or no to cancel.");
-    } else {
-        const left = OTP_MAX_ATTEMPTS - otpAttempts;
-        updateOtpAttemptsText();
-        speak(
-            `Incorrect OTP. You have ${left} attempt${left === 1 ? "" : "s"} left. Please try again.`,
-            () => speak("Please say your OTP now.")
-        );
-    }
-}
-
-function handleRegenerateResponse(spoken) {
-    const lower = spoken.toLowerCase();
-    if (/yes|haan|ok|sure|proceed/.test(lower)) {
-        startOtpFlow();
-    } else {
-        showAuthPhase("biometric");
-        speak("Authentication cancelled. Please tap the button to try again.");
-    }
 }
 
 // ========== Voice Status Banner ==========
@@ -482,16 +404,9 @@ function parseIntent(text) {
 
 // ========== Intent Handlers ==========
 function handleVoiceInput(text) {
-    // Route to OTP handlers when on the auth screen
-    if (currentScreen === "auth") {
-        if (authPhase === "otpInput") {
-            verifyOtpInput(text);
-            return;
-        }
-        if (authPhase === "otpExhaust") {
-            handleRegenerateResponse(text);
-            return;
-        }
+    // Route to transfer screen handlers
+    if (currentScreen === "transfer") {
+        handleTransferVoiceInput(text);
         return;
     }
 
@@ -547,41 +462,241 @@ function handleBalance() {
 }
 
 function handleTransfer(intent) {
-    const { amount, recipient } = intent;
-
-    if (!amount || !recipient) {
-        respond("Please say the amount and recipient. For example, transfer 500 rupees to Rahul.");
-        return;
-    }
-
-    awaitingConfirmation = true;
-    pendingTransfer = { amount, recipient };
-    const amt = formatAmount(amount);
-    respond(`You are transferring ${amt} rupees to ${recipient}. Do you want to continue? Say yes or no.`);
+    // Navigate to the guided transfer screen for full beneficiary flow
+    showTransferScreen();
 }
 
 function handleConfirmYes() {
-    if (awaitingConfirmation) {
-        awaitingConfirmation = false;
-        mockAccount.balance -= pendingTransfer.amount;
-        const txnId = "TXN" + Math.floor(100000 + Math.random() * 900000);
-        respond(`Transfer successful. ${formatAmount(pendingTransfer.amount)} rupees sent to ${pendingTransfer.recipient}. Transaction reference number ${txnId}.`);
-        vibrateSuccess();
-    } else {
-        respond("There is nothing to confirm right now.");
-    }
+    respond("There is nothing to confirm right now. How can I help you?");
 }
 
 function handleConfirmNo() {
-    if (awaitingConfirmation) {
-        awaitingConfirmation = false;
-        respond("Transfer cancelled.");
-    } else if (awaitingTransactionCount) {
+    if (awaitingTransactionCount) {
         awaitingTransactionCount = false;
-        respond("Okay. How can I help you?");
-    } else {
-        respond("Okay. How can I help you?");
     }
+    respond("Okay. How can I help you?");
+}
+
+// ========== Transfer Screen ==========
+
+function showTransferScreen() {
+    showScreen("transfer");
+    currentTransferPhase = "selecting";
+    selectedBeneficiary = null;
+    pendingTransferAmount = 0;
+
+    // Reset all transfer UI panels
+    ["transfer-response-card", "transfer-beneficiary-section", "transfer-selected-card",
+     "transfer-confirm-card", "transfer-biometric-card", "transfer-complete-card",
+     "transfer-recognized-card", "transfer-processing-indicator"].forEach(id => {
+        document.getElementById(id).classList.add("hidden");
+    });
+
+    renderBeneficiaryList();
+    document.getElementById("transfer-beneficiary-section").classList.remove("hidden");
+
+    const listText = mockBeneficiaries.map((b, i) => `${i + 1}. ${b.name}, ${b.bank}`).join(". ");
+    transferRespond(`Would you like to transfer money to one of your beneficiaries? Here is your list. ${listText}. Please say the name of the beneficiary.`);
+}
+
+function renderBeneficiaryList() {
+    const listEl = document.getElementById("transfer-beneficiary-list");
+    listEl.innerHTML = mockBeneficiaries.map((b, i) => `
+        <div class="txn-row beneficiary-item" data-idx="${i}"
+             role="button" tabindex="0"
+             style="cursor:pointer;padding:8px 0;${i < mockBeneficiaries.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:4px' : ''}">
+            <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:38px;height:38px;border-radius:50%;background:rgba(66,165,245,0.15);
+                            display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span class="material-icons-round" style="color:#42A5F5;font-size:20px">person</span>
+                </div>
+                <div>
+                    <div class="txn-desc">${b.name}</div>
+                    <div class="txn-date">${b.bank} &bull; ****${b.accountLast4}</div>
+                </div>
+            </div>
+        </div>
+    `).join("");
+
+    listEl.querySelectorAll(".beneficiary-item").forEach(row => {
+        const select = () => {
+            const b = mockBeneficiaries[parseInt(row.dataset.idx)];
+            handleBeneficiarySelection(b.name);
+        };
+        row.addEventListener("click", select);
+        row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") select(); });
+    });
+}
+
+function matchTransferBeneficiary(text) {
+    const lower = text.toLowerCase();
+    // Full name match first
+    let match = mockBeneficiaries.find(b => lower.includes(b.name.toLowerCase()));
+    if (match) return match;
+    // First/last name match (min 3 chars to avoid noise)
+    for (const b of mockBeneficiaries) {
+        const parts = b.name.toLowerCase().split(" ");
+        if (parts.some(part => part.length > 2 && lower.includes(part))) return b;
+    }
+    return null;
+}
+
+function handleTransferVoiceInput(text) {
+    if (!text.trim()) return;
+    showRecognizedText(text);
+    switch (currentTransferPhase) {
+        case "selecting":       handleBeneficiarySelection(text); break;
+        case "entering_amount": handleTransferAmountInput(text);  break;
+        case "confirming":      handleTransferConfirmation(text); break;
+        default: break; // authenticating / complete: ignore voice
+    }
+}
+
+function handleBeneficiarySelection(text) {
+    const b = matchTransferBeneficiary(text);
+    if (!b) {
+        transferRespond("Sorry, I could not find that beneficiary. Please say one of the names from the list.");
+        return;
+    }
+    selectedBeneficiary = b;
+    currentTransferPhase = "entering_amount";
+
+    document.getElementById("transfer-beneficiary-section").classList.add("hidden");
+    document.getElementById("transfer-selected-content").innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(66,165,245,0.15);
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <span class="material-icons-round" style="color:#42A5F5;font-size:24px">person</span>
+            </div>
+            <div>
+                <div class="txn-desc" style="font-size:1rem;font-weight:600">${b.name}</div>
+                <div class="txn-date">${b.bank} &bull; ****${b.accountLast4}</div>
+            </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;
+                    display:flex;align-items:center;gap:8px">
+            <span class="material-icons-round" style="color:#66BB6A">account_balance</span>
+            <span style="color:var(--text-light,#90A4AE)">Say the amount to transfer</span>
+        </div>
+    `;
+    document.getElementById("transfer-selected-card").classList.remove("hidden");
+    transferRespond(`You selected ${b.name}, ${b.bank} account ending ${b.accountLast4}. How much would you like to transfer?`);
+}
+
+function handleTransferAmountInput(text) {
+    const amtMatch = text.match(/(\d[\d,]*\.?\d*)/);
+    const amount = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, "")) : null;
+
+    if (!amount || amount <= 0) {
+        transferRespond("Sorry, I could not understand the amount. Please say the amount. For example, say 500 rupees.");
+        return;
+    }
+
+    pendingTransferAmount = amount;
+    currentTransferPhase = "confirming";
+
+    const b = selectedBeneficiary;
+    const amtDisplay = amount.toLocaleString("en-IN");
+    document.getElementById("transfer-selected-card").classList.add("hidden");
+    document.getElementById("transfer-confirm-content").innerHTML = `
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <span style="color:var(--text-light,#90A4AE)">To</span>
+            <span style="font-weight:600">${b.name}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:var(--text-light,#90A4AE)">Bank</span>
+            <span>${b.bank} &bull; ****${b.accountLast4}</span>
+        </div>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="color:var(--text-light,#90A4AE)">Amount</span>
+            <span style="font-size:1.5rem;font-weight:700;color:#66BB6A">&#8377;${amtDisplay}</span>
+        </div>
+    `;
+    document.getElementById("transfer-confirm-card").classList.remove("hidden");
+    transferRespond(`You are about to transfer ${amtDisplay} rupees to ${b.name}, ${b.bank} account ending ${b.accountLast4}. Say yes to confirm or no to cancel.`);
+}
+
+function handleTransferConfirmation(text) {
+    const lower = text.toLowerCase().trim();
+    const isYes = /^(yes|yeah|yep|haan|ha|ji|confirm|ok|okay|proceed)/.test(lower);
+    const isNo  = /^(no|nope|cancel|nahi|stop)/.test(lower);
+
+    if (isYes) {
+        showTransferBiometric();
+    } else if (isNo) {
+        document.getElementById("transfer-confirm-card").classList.add("hidden");
+        currentTransferPhase = "selecting";
+        selectedBeneficiary = null;
+        pendingTransferAmount = 0;
+        renderBeneficiaryList();
+        document.getElementById("transfer-beneficiary-section").classList.remove("hidden");
+        transferRespond("Transfer cancelled. Please say a beneficiary name to start a new transfer.");
+    } else {
+        transferRespond("Please say yes to confirm or no to cancel the transfer.");
+    }
+}
+
+function showTransferBiometric() {
+    document.getElementById("transfer-confirm-card").classList.add("hidden");
+    currentTransferPhase = "authenticating";
+
+    const b = selectedBeneficiary;
+    const amtDisplay = pendingTransferAmount.toLocaleString("en-IN");
+    document.getElementById("transfer-biometric-detail").textContent =
+        `₹${amtDisplay} → ${b.name} (${b.bank})`;
+    document.getElementById("transfer-biometric-card").classList.remove("hidden");
+    transferRespond("Please authenticate with your fingerprint to authorize this transfer.");
+}
+
+function executeWebTransfer() {
+    document.getElementById("transfer-confirm-card").classList.add("hidden");
+    document.getElementById("transfer-processing-indicator").classList.remove("hidden");
+
+    setTimeout(() => {
+        document.getElementById("transfer-processing-indicator").classList.add("hidden");
+
+        const b = selectedBeneficiary;
+        const amount = pendingTransferAmount;
+        mockAccount.balance -= amount;
+        const txnId = "TXN" + Math.floor(100000 + Math.random() * 900000);
+        const amtDisplay = amount.toLocaleString("en-IN");
+        const balDisplay = mockAccount.balance.toLocaleString("en-IN");
+
+        currentTransferPhase = "complete";
+
+        document.getElementById("transfer-complete-content").innerHTML = `
+            <p style="color:var(--text-light,#90A4AE);margin-bottom:12px">
+                &#8377;${amtDisplay} sent to ${b.name}
+            </p>
+            <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                    <span style="color:var(--text-light,#90A4AE);font-size:0.85rem">Bank</span>
+                    <span style="font-size:0.85rem">${b.bank} &bull; ****${b.accountLast4}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+                    <span style="color:var(--text-light,#90A4AE);font-size:0.85rem">Ref. No.</span>
+                    <span style="font-size:0.85rem">${txnId}</span>
+                </div>
+                <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="color:var(--text-light,#90A4AE)">Remaining Balance</span>
+                    <span style="font-weight:700;color:#42A5F5;font-size:1.1rem">&#8377;${balDisplay}</span>
+                </div>
+            </div>
+        `;
+        document.getElementById("transfer-complete-card").classList.remove("hidden");
+
+        vibrateSuccess();
+        transferRespond(`Transfer successful! ${amtDisplay} rupees have been sent to ${b.name}. Your account balance is now ${balDisplay} rupees. Transaction reference number ${txnId}.`);
+    }, 1000);
+}
+
+function transferRespond(text) {
+    const card = document.getElementById("transfer-response-card");
+    document.getElementById("transfer-response-text").textContent = text;
+    card.classList.remove("hidden");
+    speak(text);
 }
 
 function handleChequeBook() {
@@ -666,8 +781,13 @@ function showResponse(text) {
 }
 
 function showRecognizedText(text) {
-    els.recognizedText.textContent = '"' + text + '"';
-    els.recognizedCard.classList.remove("hidden");
+    if (currentScreen === "transfer") {
+        document.getElementById("transfer-recognized-text").textContent = '"' + text + '"';
+        document.getElementById("transfer-recognized-card").classList.remove("hidden");
+    } else {
+        els.recognizedText.textContent = '"' + text + '"';
+        els.recognizedCard.classList.remove("hidden");
+    }
 }
 
 function showTransactions(transactions) {
@@ -686,6 +806,7 @@ function showTransactions(transactions) {
 }
 
 function updateListeningUI(listening) {
+    // Home screen
     if (listening) {
         els.micBtn.classList.add("listening");
         els.listeningIndicator.classList.remove("hidden");
@@ -694,6 +815,13 @@ function updateListeningUI(listening) {
         els.micBtn.classList.remove("listening");
         els.listeningIndicator.classList.add("hidden");
         els.micBtn.setAttribute("aria-label", "Tap to speak a command.");
+    }
+    // Transfer screen
+    const tMic = document.getElementById("transfer-mic-btn");
+    const tInd = document.getElementById("transfer-listening-indicator");
+    if (tMic && tInd) {
+        if (listening) { tMic.classList.add("listening"); tInd.classList.remove("hidden"); }
+        else           { tMic.classList.remove("listening"); tInd.classList.add("hidden"); }
     }
 }
 
@@ -755,57 +883,14 @@ function startApp() {
 
 // ========== Event Listeners ==========
 
-// Auth — biometric tap triggers OTP flow
+// Auth — biometric tap goes directly to home
 els.authBtn.addEventListener("click", () => {
     vibrate(100);
-    speak("Biometric scan successful. Sending a verification code to your registered number.", () => {
-        startOtpFlow();
+    vibrateSuccess();
+    speak("Biometric scan successful. Welcome.", () => {
+        showScreen("home");
+        speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or help.");
     });
-});
-
-// OTP mic — say OTP aloud
-document.getElementById("otp-mic-btn").addEventListener("click", () => {
-    vibrate(50);
-    if (isListening) {
-        stopListening();
-    } else {
-        startListening();
-    }
-});
-
-// OTP typed input
-document.getElementById("otp-text-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        const val = e.target.value.trim();
-        if (val) { verifyOtpInput(val); e.target.value = ""; }
-    }
-});
-document.getElementById("otp-text-send").addEventListener("click", () => {
-    const inp = document.getElementById("otp-text-input");
-    const val = inp.value.trim();
-    if (val) { verifyOtpInput(val); inp.value = ""; }
-});
-
-// Regenerate mic
-document.getElementById("otp-regen-mic-btn").addEventListener("click", () => {
-    vibrate(50);
-    if (isListening) {
-        stopListening();
-    } else {
-        startListening();
-    }
-});
-
-// Regenerate / Cancel buttons
-document.getElementById("otp-regen-btn").addEventListener("click", () => {
-    vibrate(50);
-    startOtpFlow();
-});
-document.getElementById("otp-cancel-btn").addEventListener("click", () => {
-    vibrate(50);
-    showAuthPhase("biometric");
-    speak("Authentication cancelled. Please tap the button to try again.");
 });
 
 // Mic button
@@ -894,6 +979,60 @@ if (pitchSlider) {
         speak("This is how I sound now.");
     });
 }
+
+// ========== Transfer Screen Event Listeners ==========
+
+document.getElementById("transfer-back-btn").addEventListener("click", () => {
+    vibrate(50);
+    currentTransferPhase = null;
+    showScreen("home");
+});
+
+document.getElementById("transfer-mic-btn").addEventListener("click", () => {
+    if (isListening) { stopListening(); } else { startListening(); }
+});
+
+document.getElementById("transfer-text-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const text = e.target.value.trim();
+        if (text) { e.target.value = ""; handleTransferVoiceInput(text); }
+    }
+});
+
+document.getElementById("transfer-send-btn").addEventListener("click", () => {
+    const inp = document.getElementById("transfer-text-input");
+    const text = inp.value.trim();
+    if (text) { inp.value = ""; handleTransferVoiceInput(text); }
+});
+
+document.getElementById("transfer-biometric-btn").addEventListener("click", () => {
+    vibrate(100);
+    document.getElementById("transfer-biometric-card").classList.add("hidden");
+    speak("Biometric scan successful.", () => executeWebTransfer());
+});
+
+document.getElementById("transfer-confirm-yes-btn").addEventListener("click", () => {
+    vibrate(50);
+    showTransferBiometric();
+});
+
+document.getElementById("transfer-confirm-no-btn").addEventListener("click", () => {
+    vibrate(50);
+    handleTransferConfirmation("no");
+});
+
+document.getElementById("transfer-done-btn").addEventListener("click", () => {
+    vibrate(50);
+    currentTransferPhase = null;
+    showScreen("home");
+    speak("Transfer complete. How can I help you?");
+});
+
+// Update quick command to trigger guided transfer flow
+document.querySelectorAll(".quick-cmd[data-cmd='Transfer 500 rupees to Rahul']").forEach(btn => {
+    btn.dataset.cmd = "Transfer money";
+});
 
 // ========== Initialize ==========
 window.addEventListener("DOMContentLoaded", () => {

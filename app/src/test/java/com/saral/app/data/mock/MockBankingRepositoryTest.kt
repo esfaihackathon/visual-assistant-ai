@@ -43,4 +43,42 @@ class MockBankingRepositoryTest {
         val txns = repo.getRecentTransactions()
         assertTrue(txns.isNotEmpty())
     }
+
+    @Test
+    fun getBeneficiaries_returnsFiveItems() = runBlocking {
+        val bens = repo.getBeneficiaries()
+        assertEquals(5, bens.size)
+    }
+
+    @Test
+    fun getBeneficiaries_allHaveValidFields() = runBlocking {
+        val bens = repo.getBeneficiaries()
+        bens.forEach { b ->
+            assertTrue(b.id.isNotBlank())
+            assertTrue(b.name.isNotBlank())
+            assertTrue(b.accountLast4.matches(Regex("\\d{4}")))
+            assertTrue(b.bankName.isNotBlank())
+            assertTrue(b.ifscCode.isNotBlank())
+        }
+    }
+
+    @Test
+    fun getBeneficiaries_idsAreUnique() = runBlocking {
+        val bens = repo.getBeneficiaries()
+        val ids = bens.map { it.id }.toSet()
+        assertEquals(bens.size, ids.size)
+    }
+
+    @Test
+    fun searchTransactions_keywordFound_returnsMatches() = runBlocking {
+        val matches = repo.searchTransactions("salary")
+        assertTrue(matches.isNotEmpty())
+        assertTrue(matches.all { it.description.contains("salary", ignoreCase = true) })
+    }
+
+    @Test
+    fun searchTransactions_keywordNotFound_returnsEmpty() = runBlocking {
+        val matches = repo.searchTransactions("xyznonexistent")
+        assertTrue(matches.isEmpty())
+    }
 }

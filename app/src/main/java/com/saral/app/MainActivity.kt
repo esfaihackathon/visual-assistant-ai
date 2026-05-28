@@ -22,6 +22,7 @@ import com.saral.app.navigation.SaralNavGraph
 import java.util.Locale
 import com.saral.app.presentation.auth.AuthViewModel
 import com.saral.app.presentation.home.HomeViewModel
+import com.saral.app.presentation.transfer.TransferViewModel
 import com.saral.app.ui.theme.NavyDark
 import com.saral.app.ui.theme.SaralTheme
 import com.saral.app.voice.SpeechRecognizerManager
@@ -39,9 +40,11 @@ class MainActivity : FragmentActivity() {
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val authViewModel: AuthViewModel by viewModels()
+    private val transferViewModel: TransferViewModel by viewModels()
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private var navController: androidx.navigation.NavHostController? = null
+    private var pendingBiometricSuccessAction: (() -> Unit)? = null
 
     private val ttsReadyState = mutableStateOf(false)
     private val availableVoicesState = mutableStateOf<List<String>>(emptyList())
@@ -74,6 +77,10 @@ class MainActivity : FragmentActivity() {
             ttsManager.speak(text)
         }
 
+        transferViewModel.setSpeakCallback { text ->
+            ttsManager.speak(text)
+        }
+
         setContent {
             SaralTheme {
                 Surface(
@@ -95,7 +102,7 @@ class MainActivity : FragmentActivity() {
                     SaralNavGraph(
                         navController = navCtrl,
                         onSpeak = { text -> ttsManager.speak(text) },
-                        onAuthenticate = { showBiometricPrompt() },
+                        onAuthenticate = { showBiometricPrompt { authViewModel.onBiometricSuccess() } },
                         onMicClick = { onMicButtonClick() },
                         onTextCommand = { command -> homeViewModel.onVoiceResult(command) },
                         onQuickCommand = { command -> homeViewModel.onVoiceResult(command) },
@@ -122,9 +129,12 @@ class MainActivity : FragmentActivity() {
                         onHapticToggled = { enabled ->
                             hapticEnabledState.value = enabled
                         },
+                        onTransferMicClick = { onTransferMicButtonClick() },
+                        onRequestTransferBiometric = { showBiometricPrompt { transferViewModel.onBiometricSuccess() } },
                         isListening = isListening,
                         homeViewModel = homeViewModel,
-                        authViewModel = authViewModel
+                        authViewModel = authViewModel,
+                        transferViewModel = transferViewModel
                     )
                 }
             }
@@ -154,13 +164,15 @@ class MainActivity : FragmentActivity() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     hapticManager.vibrateSuccess()
-                    authViewModel.onBiometricSuccess()
+                    pendingBiometricSuccessAction?.invoke()
+                    pendingBiometricSuccessAction = null
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
                     hapticManager.vibrateError()
                     ttsManager.speak("Authentication failed. Please try again.")
+                    transferViewModel.onBiometricFailed()
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -169,14 +181,16 @@ class MainActivity : FragmentActivity() {
                         errorCode == BiometricPrompt.ERROR_USER_CANCELED
                     ) {
                         hapticManager.vibrateSuccess()
-                        authViewModel.onBiometricSuccess()
+                        pendingBiometricSuccessAction?.invoke()
+                        pendingBiometricSuccessAction = null
                     }
                 }
             }
         )
     }
 
-    private fun showBiometricPrompt() {
+    private fun showBiometricPrompt(onSuccess: () -> Unit) {
+        pendingBiometricSuccessAction = onSuccess
         val biometricManager = BiometricManager.from(this)
         val canAuthenticate = biometricManager.canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_STRONG or
@@ -192,7 +206,8 @@ class MainActivity : FragmentActivity() {
             biometricPrompt.authenticate(promptInfo)
         } else {
             hapticManager.vibrateSuccess()
-            authViewModel.onBiometricSuccess()
+            onSuccess()
+            pendingBiometricSuccessAction = null
         }
     }
 
@@ -207,6 +222,18 @@ class MainActivity : FragmentActivity() {
             speechManager.startListening { result ->
                 homeViewModel.setListening(false)
                 homeViewModel.onVoiceResult(result)
+            }
+        }
+    }
+
+    private fun onTransferMicButtonClick() {
+        hapticManager.vibrateShort()
+        if (speechManager.isListening.value) {
+            speechManager.stopListening()
+        } else {
+            ttsManager.stop()
+            speechManager.startListening { result ->
+                transferViewModel.onVoiceInput(result)
             }
         }
     }
