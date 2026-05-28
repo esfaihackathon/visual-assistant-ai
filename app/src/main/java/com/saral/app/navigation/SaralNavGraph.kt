@@ -28,6 +28,17 @@ fun SaralNavGraph(
     onSpeak: (String) -> Unit,
     onAuthenticate: () -> Unit,
     onMicClick: () -> Unit,
+    onTextCommand: (String) -> Unit,
+    onQuickCommand: (String) -> Unit,
+    availableVoices: List<String>,
+    selectedVoice: String?,
+    selectedLanguage: String,
+    speechRate: Float,
+    hapticEnabled: Boolean,
+    onLanguageSelected: (String) -> Unit,
+    onSpeechRateChanged: (Float) -> Unit,
+    onVoiceSelected: (String) -> Unit,
+    onHapticToggled: (Boolean) -> Unit,
     isListening: Boolean,
     homeViewModel: HomeViewModel,
     authViewModel: AuthViewModel
@@ -71,6 +82,9 @@ fun SaralNavGraph(
             HomeScreen(
                 viewModel = homeViewModel,
                 onMicClick = onMicClick,
+                onTextCommand = onTextCommand,
+                onQuickCommand = onQuickCommand,
+                isListening = isListening,
                 onSettingsClick = {
                     navController.navigate(Routes.SETTINGS)
                 }
@@ -79,7 +93,16 @@ fun SaralNavGraph(
 
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                availableVoices = availableVoices,
+                selectedVoice = selectedVoice,
+                selectedLanguage = selectedLanguage,
+                speechRate = speechRate,
+                hapticEnabled = hapticEnabled,
+                onLanguageSelected = onLanguageSelected,
+                onSpeechRateChanged = onSpeechRateChanged,
+                onVoiceSelected = onVoiceSelected,
+                onHapticToggled = onHapticToggled
             )
         }
     }
