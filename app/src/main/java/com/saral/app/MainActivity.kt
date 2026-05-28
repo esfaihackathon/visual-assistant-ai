@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.saral.app.accessibility.HapticManager
 import com.saral.app.navigation.SaralNavGraph
+import java.util.Locale
 import com.saral.app.presentation.auth.AuthViewModel
 import com.saral.app.presentation.home.HomeViewModel
 import com.saral.app.ui.theme.NavyDark
@@ -40,6 +42,13 @@ class MainActivity : FragmentActivity() {
     private lateinit var executor: Executor
     private lateinit var biometricPrompt: BiometricPrompt
     private var navController: androidx.navigation.NavHostController? = null
+
+    private val ttsReadyState = mutableStateOf(false)
+    private val availableVoicesState = mutableStateOf<List<String>>(emptyList())
+    private val selectedVoiceNameState = mutableStateOf<String?>(null)
+    private val selectedLanguageState = mutableStateOf("English")
+    private val speechRateState = mutableStateOf(0.88f)
+    private val hapticEnabledState = mutableStateOf(true)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -68,19 +77,51 @@ class MainActivity : FragmentActivity() {
         setContent {
             SaralTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize(),
                     color = NavyDark
                 ) {
                     val navCtrl = rememberNavController()
                     navController = navCtrl
 
                     val isListening by speechManager.isListening.collectAsState()
+                    val ttsReady by ttsReadyState
+                    val availableVoices by availableVoicesState
+                    val selectedVoiceName by selectedVoiceNameState
+                    val selectedLanguage by selectedLanguageState
+                    val speechRate by speechRateState
+                    val hapticEnabled by hapticEnabledState
 
                     SaralNavGraph(
                         navController = navCtrl,
                         onSpeak = { text -> ttsManager.speak(text) },
                         onAuthenticate = { showBiometricPrompt() },
                         onMicClick = { onMicButtonClick() },
+                        onTextCommand = { command -> homeViewModel.onVoiceResult(command) },
+                        onQuickCommand = { command -> homeViewModel.onVoiceResult(command) },
+                        availableVoices = availableVoices,
+                        selectedVoice = selectedVoiceName,
+                        selectedLanguage = selectedLanguage,
+                        speechRate = speechRate,
+                        hapticEnabled = hapticEnabled,
+                        onLanguageSelected = { language ->
+                            selectedLanguageState.value = language
+                            val locale = if (language == "Hindi") Locale("hi", "IN") else Locale("en", "IN")
+                            ttsManager.setLanguage(locale)
+                            speechManager.setLanguage(locale)
+                            selectedVoiceNameState.value = ttsManager.getSelectedVoiceName()
+                        },
+                        onSpeechRateChanged = { rate ->
+                            speechRateState.value = rate
+                            ttsManager.setSpeechRate(rate)
+                        },
+                        onVoiceSelected = { voiceName ->
+                            selectedVoiceNameState.value = voiceName
+                            ttsManager.setVoice(voiceName)
+                        },
+                        onHapticToggled = { enabled ->
+                            hapticEnabledState.value = enabled
+                        },
                         isListening = isListening,
                         homeViewModel = homeViewModel,
                         authViewModel = authViewModel
@@ -91,7 +132,11 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun initializeVoice() {
-        ttsManager.initialize()
+        ttsManager.initialize {
+            ttsReadyState.value = true
+            availableVoicesState.value = ttsManager.getAvailableVoiceNames()
+            selectedVoiceNameState.value = ttsManager.getSelectedVoiceName()
+        }
         speechManager.initialize()
     }
 
