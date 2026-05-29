@@ -486,10 +486,10 @@ contribs = [
      "first feature demo for stakeholders",
      AMBER),
     ("Sukamal Maity", "@SukamalMaity",
-     "—",
-     "Product strategy & UX review",
+     "1",
+     "1 commit  ·  business deck & contributor attribution",
      "User research, accessibility requirement specification,\n"
-     "stakeholder presentation, QA sign-off",
+     "stakeholder presentation, QA sign-off, business PPT",
      PURPLE),
     ("Hardeep",       "@hkhardeep9",
      "2",
@@ -505,7 +505,7 @@ for i, (name, handle, commits, cnote, role, clr) in enumerate(contribs):
     # Commit count badge
     rect(sl, lx2+Inches(0.15), cy2+Inches(0.18), Inches(0.52), Inches(0.36), fill=clr)
     tx(sl, commits, lx2+Inches(0.15), cy2+Inches(0.17), Inches(0.52), Inches(0.36),
-       size=14, bold=True, color=DARK if commits != "—" else WHITE, align=PP_ALIGN.CENTER)
+       size=14, bold=True, color=DARK, align=PP_ALIGN.CENTER)
     # Name + handle
     tx(sl, name,   lx2+Inches(0.8), cy2+Inches(0.04), Inches(5.65), Inches(0.28),
        size=11.5, bold=True, color=WHITE)
@@ -564,7 +564,7 @@ tx(sl, "✦ Claude  =  Aman Deep prompted and directed; Claude Sonnet 4.6 co-aut
    size=8.5, italic=True, color=AMBER)
 
 rect(sl, Inches(0.38), Inches(7.3), Inches(12.6), Inches(0.2), fill=DARK)
-tx(sl, "github.com/esfaihackathon/visual-assistant-ai  ·  branch: main  ·  35 commits total",
+tx(sl, "github.com/esfaihackathon/visual-assistant-ai  ·  branch: main  ·  36 commits total",
    Inches(0.5), Inches(7.32), Inches(12.3), Inches(0.16),
    size=9, color=MUTED, align=PP_ALIGN.CENTER)
 
