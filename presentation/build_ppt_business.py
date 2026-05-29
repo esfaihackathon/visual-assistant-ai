@@ -438,87 +438,135 @@ tx(sl, "Who built what — commits, files, and ownership",
    size=33, bold=True, color=WHITE)
 divider(sl, Inches(1.52))
 
-# Top — 4 repo stats
+# Top — 5 repo stats
 repo_kpis = [
-    ("35",   "Kotlin source files\n(Android)",      BLUE),
-    ("16",   "Test files\n439 tests, 0 failures",   TEAL),
+    ("5",    "Team\nMembers",                        PURPLE),
+    ("35",   "Kotlin source files\n(Android)",       BLUE),
+    ("16",   "Test files · 439 tests\n0 failures",   TEAL),
     ("43",   "Total files changed\nacross all PRs",  AMBER),
-    ("7,813","Lines added\n1,220 lines removed",    ORANGE),
+    ("7,813","Lines added\n1,220 lines removed",     ORANGE),
 ]
-rw = Inches(3.1)
+rw = Inches(2.54)
 for i, (n, l, c) in enumerate(repo_kpis):
     kpi(sl, Inches(0.38)+rw*i, Inches(1.72), rw-Inches(0.08), Inches(1.3), n, l, c)
 
-# Left — contributor table
+# ── Left: contributor table (5 members, compact rows) ──────────────────────
 lx2 = Inches(0.38)
 tx(sl, "Contributors & Commit Ownership",
-   lx2, Inches(3.18), Inches(6.5), Inches(0.38),
-   size=13, bold=True, color=WHITE)
+   lx2, Inches(3.12), Inches(6.6), Inches(0.36),
+   size=12.5, bold=True, color=WHITE)
 
+# Column headers
+for hx, htxt, hclr in [
+    (lx2+Inches(0.18), "Commits", MUTED),
+    (lx2+Inches(0.82), "Name / Role", MUTED),
+]:
+    tx(sl, htxt, hx, Inches(3.52), Inches(1.5), Inches(0.22),
+       size=9, bold=True, color=hclr)
+
+# (name, handle, commits_label, commits_note, role_text, clr)
 contribs = [
-    ("Aman Deep Srivastava", "AmanDeepSrivastava19", "9",
-     "Accessibility v6–v8, biometric, session timeout,\nvoice follow-ups, mic bar fix, all PPT & docs",
+    ("Aman Deep",    "@AmanDeepSrivastava19",
+     "10",
+     "10 total  ·  3 solo  ·  7 with Claude AI co-author\n"
+     "(v5.0 biometric · v7.0 redesign · v8.0 mic/biometric · PPT)",
+     "Feature delivery: accessibility redesign, voice follow-ups,\n"
+     "auto-biometric, fixed mic bar, session timeout, all docs & PPT",
      BLUE),
-    ("Arundeep Kamboj", "ArundeepKamboj", "14",
-     "Core architecture, HomeScreen redesign, colour palette,\nunit tests, navigation wiring, v3.0 release",
+    ("Arundeep Kamboj", "@ArundeepKamboj",
+     "14",
+     "14 solo commits",
+     "Core architecture, HomeScreen redesign, WCAG colour palette,\n"
+     "comprehensive unit tests, navigation wiring, v3.0 release",
      TEAL),
-    ("Jayesh Sharma", "SHARMAJAYESH / jayesh sharma", "7",
-     "First prototype + APK, README, initial prompt\ndocument, first feature demo",
+    ("Jayesh Sharma", "@SHARMAJAYESH",
+     "7",
+     "7 solo commits",
+     "First prototype + APK, README, initial prompt document,\n"
+     "first feature demo for stakeholders",
      AMBER),
-    ("Hardeep (hkhardeep9)", "hkhardeep9", "2",
-     "OTP removal, early APK push",
+    ("Sukamal Maity", "@SukamalMaity",
+     "—",
+     "Product strategy & UX review",
+     "User research, accessibility requirement specification,\n"
+     "stakeholder presentation, QA sign-off",
+     PURPLE),
+    ("Hardeep",       "@hkhardeep9",
+     "2",
+     "2 solo commits",
+     "OTP flow removal, early APK build & distribution",
      ORANGE),
 ]
-for i, (name, handle, commits, role, clr) in enumerate(contribs):
-    cy2 = Inches(3.65) + Inches(0.88)*i
-    rect(sl, lx2, cy2, Inches(6.55), Inches(0.8), fill=NAVY_CARD)
-    rect(sl, lx2, cy2, Inches(0.07), Inches(0.8), fill=clr)
-    # commit badge
-    rect(sl, lx2+Inches(0.18), cy2+Inches(0.2), Inches(0.52), Inches(0.38), fill=clr)
-    tx(sl, commits, lx2+Inches(0.18), cy2+Inches(0.19), Inches(0.52), Inches(0.38),
-       size=14, bold=True, color=DARK, align=PP_ALIGN.CENTER)
-    tx(sl, name,   lx2+Inches(0.82), cy2+Inches(0.06), Inches(5.6), Inches(0.3),
-       size=12, bold=True, color=WHITE)
-    tx(sl, f"@{handle}", lx2+Inches(0.82), cy2+Inches(0.35), Inches(3.0), Inches(0.22),
-       size=9.5, color=BLUE, italic=True)
-    tx(sl, role, lx2+Inches(0.82), cy2+Inches(0.55), Inches(5.6), Inches(0.36),
-       size=9.5, color=MUTED, wrap=True)
+row_h = Inches(0.76)
+for i, (name, handle, commits, cnote, role, clr) in enumerate(contribs):
+    cy2 = Inches(3.76) + row_h * i
+    rect(sl, lx2, cy2, Inches(6.6), row_h - Inches(0.04), fill=NAVY_CARD)
+    rect(sl, lx2, cy2, Inches(0.07), row_h - Inches(0.04), fill=clr)
+    # Commit count badge
+    rect(sl, lx2+Inches(0.15), cy2+Inches(0.18), Inches(0.52), Inches(0.36), fill=clr)
+    tx(sl, commits, lx2+Inches(0.15), cy2+Inches(0.17), Inches(0.52), Inches(0.36),
+       size=14, bold=True, color=DARK if commits != "—" else WHITE, align=PP_ALIGN.CENTER)
+    # Name + handle
+    tx(sl, name,   lx2+Inches(0.8), cy2+Inches(0.04), Inches(5.65), Inches(0.28),
+       size=11.5, bold=True, color=WHITE)
+    tx(sl, f"{handle}  ·  {cnote}", lx2+Inches(0.8), cy2+Inches(0.30), Inches(5.65), Inches(0.22),
+       size=8.5, color=clr, italic=True, wrap=True)
+    tx(sl, role, lx2+Inches(0.8), cy2+Inches(0.50), Inches(5.65), Inches(0.24),
+       size=9, color=MUTED, wrap=True)
 
-# Right — key files & ownership
-rx3 = Inches(7.1)
+# ── Right: key files & ownership ───────────────────────────────────────────
+rx3 = Inches(7.18)
 tx(sl, "Key Files & Ownership",
-   rx3, Inches(3.18), Inches(6.0), Inches(0.38),
-   size=13, bold=True, color=WHITE)
+   rx3, Inches(3.12), Inches(6.0), Inches(0.36),
+   size=12.5, bold=True, color=WHITE)
 
+# (file, display_author, ai_assisted, desc, clr)
 files = [
-    ("HomeViewModel.kt",          "AmanDeepSrivastava19", "Voice intent, follow-up state machine",     BLUE),
-    ("TransferViewModel.kt",      "AmanDeepSrivastava19", "Transfer flow, biometric, nav callback",    BLUE),
-    ("TransferScreen.kt",         "AmanDeepSrivastava19", "Fixed mic bar, auto-biometric LaunchedEffect", BLUE),
-    ("HomeScreen.kt",             "AmanDeepSrivastava19", "Fixed bottom mic bar layout",               BLUE),
-    ("MainActivity.kt",           "AmanDeepSrivastava19", "Session timeout, biometric prompt",         BLUE),
-    ("HomeViewModelTest.kt",      "AmanDeepSrivastava19", "55 tests incl. follow-up flows",            TEAL),
-    ("TransferViewModelTest.kt",  "AmanDeepSrivastava19", "320 tests incl. auto-biometric",            TEAL),
-    ("Color.kt / Theme.kt",       "ArundeepKamboj",       "WCAG AAA colour palette",                   ORANGE),
-    ("SaralNavGraph.kt",          "ArundeepKamboj",       "Navigation wiring",                         ORANGE),
-    ("web/app.js",                "AmanDeepSrivastava19", "Web voice AI, all state machines",          BLUE),
-    ("web/index.html",            "AmanDeepSrivastava19", "Mic-bar HTML restructure",                  BLUE),
-    ("web/styles.css",            "AmanDeepSrivastava19", "WCAG design system, mic-bar CSS",           BLUE),
+    ("HomeViewModel.kt",         "Aman Deep",     True,  "Voice intent, follow-up state machine",       BLUE),
+    ("TransferViewModel.kt",     "Aman Deep",     True,  "Transfer flow, biometric, nav callback",      BLUE),
+    ("TransferScreen.kt",        "Aman Deep",     True,  "Fixed mic bar, auto-biometric trigger",       BLUE),
+    ("HomeScreen.kt",            "Aman Deep",     True,  "Fixed bottom mic bar layout",                 BLUE),
+    ("MainActivity.kt",          "Aman Deep",     True,  "Session timeout, biometric prompt",           BLUE),
+    ("HomeViewModelTest.kt",     "Aman Deep",     True,  "55 tests incl. follow-up flows",              TEAL),
+    ("TransferViewModelTest.kt", "Aman Deep",     True,  "320 tests incl. auto-biometric",              TEAL),
+    ("Color.kt / Theme.kt",      "Arundeep",      False, "WCAG AAA colour palette",                     ORANGE),
+    ("SaralNavGraph.kt",         "Arundeep",      False, "Navigation wiring",                           ORANGE),
+    ("web/app.js",               "Aman Deep",     True,  "Web voice AI, all state machines",            BLUE),
+    ("web/styles.css",           "Aman Deep",     True,  "WCAG design system, mic-bar CSS",             BLUE),
+    ("PROMPT_DOCUMENT.md",       "Aman Deep",     True,  "Full project brief & prompt history",         PURPLE),
 ]
-for i, (fname, owner, desc, clr) in enumerate(files):
-    fy = Inches(3.65) + Inches(0.3)*i
-    fill = NAVY_CARD if i%2==0 else RGBColor(0x10,0x24,0x3C)
-    rect(sl, rx3, fy, Inches(6.1), Inches(0.28), fill=fill)
-    tx(sl, fname, rx3+Inches(0.1),  fy+Inches(0.03), Inches(2.65), Inches(0.24),
-       size=9.5, bold=True, color=WHITE)
-    tx(sl, f"@{owner.split('/')[0]}", rx3+Inches(2.78), fy+Inches(0.03), Inches(1.55), Inches(0.24),
-       size=9, color=clr, italic=True)
-    tx(sl, desc, rx3+Inches(4.35), fy+Inches(0.03), Inches(1.72), Inches(0.24),
-       size=8.5, color=MUTED, wrap=False)
 
-rect(sl, Inches(0.38), Inches(7.12), Inches(12.6), Inches(0.3), fill=DARK)
-tx(sl, "Repository: github.com/esfaihackathon/visual-assistant-ai  •  Branch: main  •  35 commits total",
-   Inches(0.5), Inches(7.14), Inches(12.3), Inches(0.26),
-   size=9.5, color=MUTED, align=PP_ALIGN.CENTER)
+# Column header row
+rect(sl, rx3, Inches(3.52), Inches(6.1), Inches(0.24), fill=RGBColor(0x08,0x18,0x2E))
+for hx2, htxt2 in [
+    (rx3+Inches(0.1),  "File"),
+    (rx3+Inches(2.7),  "Author"),
+    (rx3+Inches(4.15), "AI-assisted"),
+    (rx3+Inches(5.1),  "Purpose"),
+]:
+    tx(sl, htxt2, hx2, Inches(3.54), Inches(1.2), Inches(0.2),
+       size=8.5, bold=True, color=MUTED)
+
+for i, (fname, author, ai, desc, clr) in enumerate(files):
+    fy = Inches(3.78) + Inches(0.27)*i
+    fill = NAVY_CARD if i%2==0 else RGBColor(0x10,0x24,0x3C)
+    rect(sl, rx3, fy, Inches(6.1), Inches(0.26), fill=fill)
+    tx(sl, fname,  rx3+Inches(0.1),  fy+Inches(0.03), Inches(2.55), Inches(0.22), size=9,   bold=True, color=WHITE)
+    tx(sl, author, rx3+Inches(2.7),  fy+Inches(0.03), Inches(1.4),  Inches(0.22), size=9,   color=clr, italic=True)
+    ai_lbl = "✦ Claude" if ai else "solo"
+    ai_clr = AMBER if ai else MUTED
+    tx(sl, ai_lbl, rx3+Inches(4.15), fy+Inches(0.03), Inches(0.9),  Inches(0.22), size=8.5, color=ai_clr, bold=ai)
+    tx(sl, desc,   rx3+Inches(5.1),  fy+Inches(0.03), Inches(0.98), Inches(0.22), size=7.5, color=MUTED)
+
+# AI legend note
+tx(sl, "✦ Claude  =  Aman Deep prompted and directed; Claude Sonnet 4.6 co-authored the implementation",
+   rx3, Inches(7.06), Inches(6.1), Inches(0.24),
+   size=8.5, italic=True, color=AMBER)
+
+rect(sl, Inches(0.38), Inches(7.3), Inches(12.6), Inches(0.2), fill=DARK)
+tx(sl, "github.com/esfaihackathon/visual-assistant-ai  ·  branch: main  ·  35 commits total",
+   Inches(0.5), Inches(7.32), Inches(12.3), Inches(0.16),
+   size=9, color=MUTED, align=PP_ALIGN.CENTER)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SLIDE 7 — REFERENCES (clean, single slide)
