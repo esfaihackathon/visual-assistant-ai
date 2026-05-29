@@ -66,15 +66,17 @@ class TransferViewModelTest {
 
     private fun createVm(
         repo: BankingRepository = FakeBankingRepository()
-    ): Pair<TransferViewModel, MutableList<String>> {
-        val spoken = mutableListOf<String>()
+    ): Triple<TransferViewModel, MutableList<String>, MutableList<Unit>> {
+        val spoken   = mutableListOf<String>()
+        val navCalls = mutableListOf<Unit>()
         val vm = TransferViewModel(
             getBeneficiariesUseCase = GetBeneficiariesUseCase(repo),
-            transferMoneyUseCase = TransferMoneyUseCase(repo),
-            getBalanceUseCase = GetBalanceUseCase(repo)
+            transferMoneyUseCase    = TransferMoneyUseCase(repo),
+            getBalanceUseCase       = GetBalanceUseCase(repo)
         )
         vm.setSpeakCallback { text -> spoken.add(text) }
-        return vm to spoken
+        vm.setNavigateCallback { navCalls.add(Unit) }
+        return Triple(vm, spoken, navCalls)
     }
 
     // ──────────────────────────────────────────
@@ -83,32 +85,32 @@ class TransferViewModelTest {
 
     @Test
     fun initialStep_isSelectingBeneficiary() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         assertTrue(vm.step.value is TransferStep.SelectingBeneficiary)
     }
 
     @Test
     fun initialAssistantMessage_isEmpty() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         assertEquals("", vm.assistantMessage.value)
     }
 
     @Test
     fun initialRecognizedText_isEmpty() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         assertEquals("", vm.recognizedText.value)
     }
 
     @Test
     fun beneficiaries_loadedAfterInit() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         assertEquals(3, vm.beneficiaries.value.size)
     }
 
     @Test
     fun beneficiaries_containsExpectedNames() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         val names = vm.beneficiaries.value.map { it.name }
         assertTrue(names.contains("Rahul Sharma"))
@@ -122,7 +124,7 @@ class TransferViewModelTest {
 
     @Test
     fun onScreenLoad_speaksIntro() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onScreenLoad()
 
@@ -133,7 +135,7 @@ class TransferViewModelTest {
 
     @Test
     fun onScreenLoad_listsAllBeneficiaries() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onScreenLoad()
 
@@ -145,7 +147,7 @@ class TransferViewModelTest {
 
     @Test
     fun onScreenLoad_calledTwice_speaksOnlyOnce() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onScreenLoad()
         vm.onScreenLoad()
@@ -155,7 +157,7 @@ class TransferViewModelTest {
 
     @Test
     fun onScreenLoad_beforeBeneficiariesLoad_doesNotSpeak() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         vm.onScreenLoad()
         assertTrue(spoken.isEmpty())
     }
@@ -166,7 +168,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_byFullName_transitionsToEnterAmount() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Rahul Sharma")
@@ -177,7 +179,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_byFirstName_matchesCorrectly() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Priya")
@@ -189,7 +191,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_byLastName_matchesCorrectly() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Kumar")
@@ -201,7 +203,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_inPhrase_matches() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Transfer to Rahul")
@@ -212,7 +214,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_speaksSelectedDetails() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         spoken.clear()
 
@@ -226,7 +228,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_notFound_remainsInSelectingState() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Zubair Khan Mirza")
@@ -237,7 +239,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_notFound_speaksError() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         spoken.clear()
 
@@ -249,7 +251,7 @@ class TransferViewModelTest {
 
     @Test
     fun selectBeneficiary_updatesRecognizedText() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Rahul")
@@ -264,7 +266,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_integer_parsedCorrectly() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -278,7 +280,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_withCommas_parsedCorrectly() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -292,7 +294,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_decimalAmount_parsedCorrectly() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -306,7 +308,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_noNumber_remainsInEnterAmountState() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -319,7 +321,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_noNumber_speaksError() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -333,7 +335,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_speaksConfirmationWithDetails() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -350,7 +352,7 @@ class TransferViewModelTest {
 
     @Test
     fun enterAmount_preservesBeneficiary() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Priya")
         advanceUntilIdle()
@@ -368,7 +370,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmYes_movesToAwaitingBiometric() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -383,7 +385,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmYes_speaksAuthPrompt() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -399,7 +401,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmYes_awaitingBiometric_preservesBeneficiaryAndAmount() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Priya")
         advanceUntilIdle()
@@ -416,7 +418,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmYes_haan_movesToAwaitingBiometric() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -431,7 +433,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmOk_movesToAwaitingBiometric() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -450,7 +452,7 @@ class TransferViewModelTest {
 
     @Test
     fun awaitingBiometric_voiceInputIsIgnored() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -475,7 +477,7 @@ class TransferViewModelTest {
 
     @Test
     fun onBiometricSuccess_completesTransfer() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -538,7 +540,7 @@ class TransferViewModelTest {
 
     @Test
     fun onBiometricSuccess_whenNotAwaitingBiometric_doesNothing() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         spoken.clear()
 
@@ -555,7 +557,7 @@ class TransferViewModelTest {
 
     @Test
     fun onBiometricFailed_remainsInAwaitingBiometric() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -571,7 +573,7 @@ class TransferViewModelTest {
 
     @Test
     fun onBiometricFailed_speaksError() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -588,7 +590,7 @@ class TransferViewModelTest {
 
     @Test
     fun onBiometricFailed_whenNotAwaitingBiometric_doesNothing() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         spoken.clear()
 
@@ -604,7 +606,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmNo_returnsToSelectingBeneficiary() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -619,7 +621,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmNo_nahi_alsoWorks() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -634,7 +636,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmNo_cancel_alsoWorks() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -649,7 +651,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmNo_speaksCancelledMessage() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -669,7 +671,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmAmbiguous_remainsInConfirmState() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -684,7 +686,7 @@ class TransferViewModelTest {
 
     @Test
     fun confirmAmbiguous_speaksRetryPrompt() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -704,7 +706,7 @@ class TransferViewModelTest {
 
     @Test
     fun transferFailed_stateIsSetToFailed() = runTest {
-        val (vm, _) = createVm(FailingTransferRepository())
+        val (vm, _, _) = createVm(FailingTransferRepository())
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -721,7 +723,7 @@ class TransferViewModelTest {
 
     @Test
     fun transferFailed_speaksFailureMessage() = runTest {
-        val (vm, spoken) = createVm(FailingTransferRepository())
+        val (vm, spoken, _) = createVm(FailingTransferRepository())
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -738,12 +740,14 @@ class TransferViewModelTest {
     }
 
     // ──────────────────────────────────────────
-    // Terminal states ignore voice
+    // Complete state — unknown voice speaks hint
+    // (Complete/Failed now respond to "done/home/menu";
+    //  unrecognised words speak a hint, not silence)
     // ──────────────────────────────────────────
 
     @Test
-    fun completeState_voiceInputIsIgnored() = runTest {
-        val (vm, spoken) = createVm()
+    fun completeState_unknownVoice_remainsComplete_andSpeaksHint() = runTest {
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -760,13 +764,15 @@ class TransferViewModelTest {
         vm.onVoiceInput("check balance")
         advanceUntilIdle()
 
+        // State unchanged
         assertTrue(vm.step.value is TransferStep.Complete)
-        assertTrue(spoken.isEmpty())
+        // Speaks a helpful hint (not silently ignored)
+        assertTrue(spoken.any { it.contains("Done", ignoreCase = true) || it.contains("Main Menu", ignoreCase = true) })
     }
 
     @Test
-    fun failedState_voiceInputIsIgnored() = runTest {
-        val (vm, spoken) = createVm(FailingTransferRepository())
+    fun failedState_unknownVoice_remainsFailed_andSpeaksHint() = runTest {
+        val (vm, spoken, _) = createVm(FailingTransferRepository())
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -780,11 +786,13 @@ class TransferViewModelTest {
         assertTrue(vm.step.value is TransferStep.Failed)
         spoken.clear()
 
-        vm.onVoiceInput("retry")
+        vm.onVoiceInput("some random command")
         advanceUntilIdle()
 
+        // State unchanged
         assertTrue(vm.step.value is TransferStep.Failed)
-        assertTrue(spoken.isEmpty())
+        // Speaks a helpful hint
+        assertTrue(spoken.any { it.contains("Done", ignoreCase = true) || it.contains("home", ignoreCase = true) })
     }
 
     // ──────────────────────────────────────────
@@ -793,7 +801,7 @@ class TransferViewModelTest {
 
     @Test
     fun reset_returnsToSelectingBeneficiary() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -805,7 +813,7 @@ class TransferViewModelTest {
 
     @Test
     fun reset_clearsRecognizedText() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onVoiceInput("Rahul")
         advanceUntilIdle()
@@ -817,7 +825,7 @@ class TransferViewModelTest {
 
     @Test
     fun reset_clearsAssistantMessage() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
         vm.onScreenLoad()
         assertTrue(vm.assistantMessage.value.isNotEmpty())
@@ -829,7 +837,7 @@ class TransferViewModelTest {
 
     @Test
     fun reset_allowsOnScreenLoadAgain() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         vm.onScreenLoad()
         assertEquals(1, spoken.size)
@@ -846,7 +854,7 @@ class TransferViewModelTest {
 
     @Test
     fun blankInput_isIgnored() = runTest {
-        val (vm, spoken) = createVm()
+        val (vm, spoken, _) = createVm()
         advanceUntilIdle()
         spoken.clear()
 
@@ -901,7 +909,7 @@ class TransferViewModelTest {
 
     @Test
     fun fullFlow_cancelMidway_restartSucceeds() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Rahul")
@@ -929,7 +937,7 @@ class TransferViewModelTest {
 
     @Test
     fun fullFlow_hindi_confirmationWorks() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Rahul")
@@ -949,7 +957,7 @@ class TransferViewModelTest {
 
     @Test
     fun fullFlow_biometricFailed_thenSucceeds() = runTest {
-        val (vm, _) = createVm()
+        val (vm, _, _) = createVm()
         advanceUntilIdle()
 
         vm.onVoiceInput("Rahul")
@@ -970,5 +978,282 @@ class TransferViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.step.value is TransferStep.Complete)
+    }
+
+    // ══════════════════════════════════════════
+    // Feature 1: Voice navigation after transfer
+    // Uses the synchronous navigateCallback pattern (same as speakCallback) —
+    // no flow / channel timing issues in tests.
+    // ══════════════════════════════════════════
+
+    @Test
+    fun complete_sayDone_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.Complete)
+
+        vm.onVoiceInput("done"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayHome_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("home"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayMainMenu_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("main menu"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayBack_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("back"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayOk_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("ok"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayGoHome_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("go home"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_sayUnknown_doesNotNavigate_speaksHint() = runTest {
+        val (vm, spoken, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.Complete)
+        spoken.clear()
+
+        vm.onVoiceInput("what is my balance"); advanceUntilIdle()
+
+        assertEquals(0, nav.size)
+        assertTrue(vm.step.value is TransferStep.Complete)
+        assertTrue(spoken.any { it.contains("Done", ignoreCase = true) })
+    }
+
+    @Test
+    fun failed_sayDone_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm(FailingTransferRepository())
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.Failed)
+
+        vm.onVoiceInput("done"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun failed_sayMenu_invokesNavigateCallback() = runTest {
+        val (vm, _, nav) = createVm(FailingTransferRepository())
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("menu"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+    }
+
+    @Test
+    fun complete_navigateCallback_stateStaysComplete_untilScreenCallsReset() = runTest {
+        val (vm, _, nav) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricSuccess();  advanceUntilIdle()
+
+        vm.onVoiceInput("done"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)
+        // VM step stays Complete — the SCREEN calls vm.reset() + onBack()
+        assertTrue(vm.step.value is TransferStep.Complete)
+    }
+
+    // ══════════════════════════════════════════
+    // Feature 3: Beneficiary tap selection
+    // (onBeneficiarySelected bypasses voice
+    //  name-matching, selects directly)
+    // ══════════════════════════════════════════
+
+    private val rahul = Beneficiary("BEN001", "Rahul Sharma", "1234", "SBI", "SBIN0001234")
+    private val priya = Beneficiary("BEN002", "Priya Gupta", "5678", "HDFC Bank", "HDFC0005678")
+
+    @Test
+    fun onBeneficiarySelected_transitionsToEnterAmount() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+
+        vm.onBeneficiarySelected(rahul)
+        advanceUntilIdle()
+
+        assertTrue(vm.step.value is TransferStep.EnterAmount)
+    }
+
+    @Test
+    fun onBeneficiarySelected_setsCorrectBeneficiaryInState() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+
+        vm.onBeneficiarySelected(priya)
+        advanceUntilIdle()
+
+        val step = vm.step.value as TransferStep.EnterAmount
+        assertEquals("Priya Gupta", step.beneficiary.name)
+        assertEquals("5678", step.beneficiary.accountLast4)
+        assertEquals("HDFC Bank", step.beneficiary.bankName)
+    }
+
+    @Test
+    fun onBeneficiarySelected_speaksBeneficiaryNameAndBank() = runTest {
+        val (vm, spoken, _) = createVm()
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onBeneficiarySelected(rahul)
+        advanceUntilIdle()
+
+        val msg = spoken.joinToString(" ")
+        assertTrue(msg.contains("Rahul Sharma"))
+        assertTrue(msg.contains("SBI"))
+        assertTrue(msg.contains("1234"))
+    }
+
+    @Test
+    fun onBeneficiarySelected_promptsForAmount() = runTest {
+        val (vm, spoken, _) = createVm()
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onBeneficiarySelected(priya)
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("amount", ignoreCase = true) || it.contains("transfer", ignoreCase = true) })
+    }
+
+    @Test
+    fun onBeneficiarySelected_thenVoiceAmount_proceedsToConfirm() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+
+        vm.onBeneficiarySelected(rahul)
+        advanceUntilIdle()
+        vm.onVoiceInput("1000 rupees")
+        advanceUntilIdle()
+
+        val step = vm.step.value as TransferStep.ConfirmTransfer
+        assertEquals("Rahul Sharma", step.beneficiary.name)
+        assertEquals(1000.0, step.amount, 0.001)
+    }
+
+    @Test
+    fun onBeneficiarySelected_worksWhileBeneficiariesStillLoading() = runTest {
+        val (vm, _, _) = createVm()
+        // Do NOT advanceUntilIdle — beneficiaries may not be loaded yet
+
+        vm.onBeneficiarySelected(rahul)    // tap directly (no name-matching needed)
+        // Still transitions fine
+        assertTrue(vm.step.value is TransferStep.EnterAmount)
+    }
+
+    @Test
+    fun fullFlow_tapSelect_thenVoiceAmount_thenConfirm_thenBiometric_completes() = runTest {
+        val repo = FakeBankingRepository(balance = 15000.0)
+        val (vm, spoken, nav) = createVm(repo)
+        advanceUntilIdle()
+
+        // Step 1: tap selection (Feature 3)
+        vm.onBeneficiarySelected(priya)
+        advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.EnterAmount)
+
+        // Step 2: voice amount
+        vm.onVoiceInput("500 rupees")
+        advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.ConfirmTransfer)
+
+        // Step 3: confirm
+        vm.onVoiceInput("yes")
+        advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.AwaitingBiometric)
+
+        // Step 4: biometric
+        vm.onBiometricSuccess()
+        advanceUntilIdle()
+
+        val complete = vm.step.value as TransferStep.Complete
+        assertEquals("Priya Gupta", complete.beneficiary.name)
+        assertEquals(500.0, complete.amount, 0.001)
+        assertEquals(14500.0, complete.remainingBalance, 0.001)
+        assertTrue(spoken.any { it.contains("successful", ignoreCase = true) })
+
+        // Step 5: voice navigation home (Feature 1) — callback, synchronous
+        vm.onVoiceInput("done"); advanceUntilIdle()
+
+        assertEquals(1, nav.size)  // navigateCallback was invoked exactly once
     }
 }

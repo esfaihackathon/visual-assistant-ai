@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Saral logo: bank building (finance) + amber sound waves (voice / accessibility).
+    Visible against the dark navy adaptive-icon background (#0A1628).
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
     <group
         android:pivotX="54"
         android:pivotY="54">
-        <path
-            android:fillColor="#4DA8FF"
-            android:pathData="M54,30 C40.7,30 30,40.7 30,54 C30,67.3 40.7,78 54,78 C67.3,78 78,67.3 78,54 C78,40.7 67.3,30 54,30Z" />
+
+        <!-- Bank roof — triangle -->
         <path
             android:fillColor="#FFFFFF"
-            android:pathData="M45,48 L45,60 M45,54 L58,54 M58,48 L58,60"
-            android:strokeWidth="3"
-            android:strokeColor="#FFFFFF" />
+            android:pathData="M54,18 L84,42 L24,42 Z"/>
+
+        <!-- Ledge beneath roof -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M22,42 L86,42 L86,47 L22,47 Z"/>
+
+        <!-- Left column -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M30,47 L40,47 L40,73 L30,73 Z"/>
+
+        <!-- Centre column -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M49,47 L59,47 L59,73 L49,73 Z"/>
+
+        <!-- Right column -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M68,47 L78,47 L78,73 L68,73 Z"/>
+
+        <!-- Base platform -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M21,73 L87,73 L87,79 L21,79 Z"/>
+
+        <!-- Amber sound wave – small (stroke-only path; no fillColor attribute) -->
+        <path
+            android:strokeColor="#FFC107"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round"
+            android:pathData="M84,57 Q90,60 84,66"/>
+
+        <!-- Amber sound wave – large -->
+        <path
+            android:strokeColor="#FFC107"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round"
+            android:pathData="M87,51 Q97,60 87,72"/>
+
     </group>
 </vector>

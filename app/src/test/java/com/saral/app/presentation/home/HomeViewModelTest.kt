@@ -331,6 +331,127 @@ class HomeViewModelTest {
     }
 
     // ──────────────────────────────────────────
+    // Balance follow-up (Feature v7.0)
+    // ──────────────────────────────────────────
+
+    @Test
+    fun checkBalance_appendsFollowUpPrompt() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+
+        assertTrue(
+            "Expected follow-up prompt after balance",
+            spoken.any { it.contains("main menu", ignoreCase = true) || it.contains("what you'd like", ignoreCase = true) }
+        )
+    }
+
+    @Test
+    fun checkBalance_followUp_mainMenu_dismisses() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("main menu")
+        advanceUntilIdle()
+
+        assertTrue(
+            "Expected dismissal response after main menu",
+            spoken.any { it.contains("How else can I help", ignoreCase = true) }
+        )
+    }
+
+    @Test
+    fun checkBalance_followUp_done_dismisses() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("done")
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("How else can I help", ignoreCase = true) })
+    }
+
+    @Test
+    fun checkBalance_followUp_back_dismisses() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("go back")
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("How else can I help", ignoreCase = true) })
+    }
+
+    @Test
+    fun checkBalance_followUp_newCommand_parsedNormally() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+        spoken.clear()
+
+        // Say another valid command — cheque book should work fine
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+
+        assertTrue(
+            "Expected cheque book response after balance follow-up",
+            spoken.any { it.contains("cheque book", ignoreCase = true) || it.contains("working days", ignoreCase = true) }
+        )
+    }
+
+    @Test
+    fun checkBalance_followUp_onlyOneInterceptedInput() = runTest {
+        // After follow-up is consumed, subsequent inputs go through normal intent parsing
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+
+        vm.onVoiceResult("main menu")   // consumes the follow-up flag
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("Check my balance")  // should parse normally again
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("rupees", ignoreCase = true) })
+    }
+
+    @Test
+    fun checkBalance_followUp_transferCommand_navigates() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+        val events = mutableListOf<HomeNavigationEvent>()
+        val job = launch { vm.navigationEvent.collect { events.add(it) } }
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+
+        vm.onVoiceResult("Transfer money")
+        advanceUntilIdle()
+
+        assertTrue(events.any { it is HomeNavigationEvent.NavigateToTransfer })
+        job.cancel()
+    }
+
+    // ──────────────────────────────────────────
     // Cheque book
     // ──────────────────────────────────────────
 
@@ -343,6 +464,149 @@ class HomeViewModelTest {
         advanceUntilIdle()
 
         assertTrue(spoken.any { it.contains("cheque book") || it.contains("working days") })
+    }
+
+    // ──────────────────────────────────────────
+    // Cheque book follow-up (Feature v7.0)
+    // ──────────────────────────────────────────
+
+    @Test
+    fun chequeBook_appendsFollowUpPrompt() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+
+        assertTrue(
+            "Expected follow-up prompt after cheque book request",
+            spoken.any { it.contains("main menu", ignoreCase = true) || it.contains("what you'd like", ignoreCase = true) }
+        )
+    }
+
+    @Test
+    fun chequeBook_followUp_mainMenu_dismisses() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("main menu")
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("How else can I help", ignoreCase = true) })
+    }
+
+    @Test
+    fun chequeBook_followUp_home_dismisses() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("take me home")
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("How else can I help", ignoreCase = true) })
+    }
+
+    @Test
+    fun chequeBook_followUp_newCommand_parsedNormally() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+
+        assertTrue(
+            "Expected balance response after cheque book follow-up",
+            spoken.any { it.contains("rupees", ignoreCase = true) }
+        )
+    }
+
+    @Test
+    fun chequeBook_followUp_onlyOneInterceptedInput() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+
+        vm.onVoiceResult("done")  // consumes follow-up
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("Request cheque book")  // should parse normally
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("working days", ignoreCase = true) })
+    }
+
+    @Test
+    fun chequeBook_followUp_transferCommand_navigates() = runTest {
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+        val events = mutableListOf<HomeNavigationEvent>()
+        val job = launch { vm.navigationEvent.collect { events.add(it) } }
+
+        vm.onVoiceResult("Request cheque book")
+        advanceUntilIdle()
+
+        vm.onVoiceResult("Transfer money")
+        advanceUntilIdle()
+
+        assertTrue(events.any { it is HomeNavigationEvent.NavigateToTransfer })
+        job.cancel()
+    }
+
+    // ──────────────────────────────────────────
+    // Flag isolation (v7.0)
+    // ──────────────────────────────────────────
+
+    @Test
+    fun simpleFollowUp_doesNotInterfereWithTransactionFollowUp() = runTest {
+        // Check balance (sets awaitingSimpleFollowUp), then immediately ask
+        // for transactions — the transaction count handler resets simpleFollowUp
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("Check my balance")
+        advanceUntilIdle()
+        spoken.clear()
+
+        // Asking for transactions clears simpleFollowUp and sets transactionFlow
+        vm.onVoiceResult("last 5 transactions")
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.showTransactions)
+        assertTrue(spoken.any { it.contains("transactions", ignoreCase = true) })
+    }
+
+    @Test
+    fun transactionFollowUp_doesNotInterfereWithSimpleFollowUp() = runTest {
+        // After transaction follow-up is consumed, balance follow-up should work
+        val vm = createViewModel()
+        val spoken = vm.captureSpoken()
+
+        vm.onVoiceResult("last 5 transactions")
+        advanceUntilIdle()
+
+        vm.onVoiceResult("main menu")  // clears transactionFollowUp
+        advanceUntilIdle()
+        spoken.clear()
+
+        vm.onVoiceResult("Check my balance")  // should trigger simpleFollowUp
+        advanceUntilIdle()
+
+        assertTrue(spoken.any { it.contains("main menu", ignoreCase = true) || it.contains("what you'd like", ignoreCase = true) })
     }
 
     // ──────────────────────────────────────────

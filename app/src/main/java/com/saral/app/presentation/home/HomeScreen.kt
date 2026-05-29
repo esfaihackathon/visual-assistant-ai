@@ -73,6 +73,7 @@ import com.saral.app.ui.theme.AccentYellow
 import com.saral.app.ui.theme.ErrorRed
 import com.saral.app.ui.theme.NavyDark
 import com.saral.app.ui.theme.NavyLight
+import com.saral.app.ui.theme.PrimaryBtn
 import com.saral.app.ui.theme.SurfaceCard
 import com.saral.app.ui.theme.TextLight
 import com.saral.app.ui.theme.TextWhite
@@ -298,7 +299,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .height(56.dp)
                         .semantics { contentDescription = "Send command" },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBtn),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(

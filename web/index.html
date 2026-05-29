@@ -2,35 +2,55 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saral — Accessible Banking Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Session Expiry Warning (global — shown over any screen) -->
+    <div id="session-warning-banner" class="session-warning-banner hidden"
+         role="alert" aria-live="assertive" aria-atomic="true">
+        <span class="material-icons-round" aria-hidden="true">timer</span>
+        <div class="session-warning-text">
+            <strong>Session expiring</strong> — tap or speak to stay
+            (<span id="session-countdown">30</span>s)
+        </div>
+        <button id="session-continue-btn" class="session-continue-btn"
+                aria-label="Continue session — dismiss expiry warning">
+            Stay
+        </button>
+    </div>
     <!-- Splash Screen -->
     <div id="splash-screen" class="screen active">
         <div class="splash-content">
-            <div class="splash-icon">
-                <span class="material-icons-round">accessibility_new</span>
+            <div class="logo-ring" aria-hidden="true">
+                <span class="material-icons-round logo-main">account_balance</span>
+                <span class="material-icons-round logo-badge">mic</span>
             </div>
             <h1 class="splash-title">Saral</h1>
             <p class="splash-subtitle">Accessible Banking for Everyone</p>
+            <p class="splash-tagline">
+                <span class="material-icons-round" aria-hidden="true">hearing</span>
+                Voice &middot; Vision &middot; Inclusion
+            </p>
         </div>
     </div>
 
     <!-- Auth Screen (Biometric only) -->
     <div id="auth-screen" class="screen">
-        <div id="auth-biometric" class="auth-content">
-            <div class="fingerprint-icon pulse">
+        <div id="auth-biometric" class="auth-content" role="main" aria-label="Biometric authentication">
+            <div class="fingerprint-icon pulse" aria-hidden="true">
                 <span class="material-icons-round">fingerprint</span>
             </div>
             <h2>Touch the fingerprint sensor</h2>
             <p class="auth-subtitle">Authenticate to access your banking</p>
-            <button id="auth-btn" class="auth-button" aria-label="Authenticate with fingerprint">
-                <span class="material-icons-round">lock_open</span>
+            <button id="auth-btn" class="auth-button" aria-label="Authenticate with fingerprint to access banking">
+                <span class="material-icons-round" aria-hidden="true">lock_open</span>
                 Tap to Authenticate (Demo)
             </button>
         </div>
@@ -38,74 +58,82 @@
 
     <!-- Home Screen -->
     <div id="home-screen" class="screen">
-        <div class="home-container">
+        <div class="home-container" id="main-content" role="main">
             <!-- Top Bar -->
             <div class="top-bar">
                 <h1 class="app-title">Saral</h1>
-                <button id="settings-btn" class="icon-btn" aria-label="Open accessibility settings">
-                    <span class="material-icons-round">settings</span>
-                </button>
+                <div class="top-bar-right">
+                    <div class="zoom-controls" role="group" aria-label="Text size">
+                        <button class="zoom-btn zoom-btn-out zoom-out-trigger"
+                                aria-label="Decrease text size">A−</button>
+                        <button class="zoom-btn zoom-btn-in zoom-in-trigger"
+                                aria-label="Increase text size">A+</button>
+                    </div>
+                    <button id="settings-btn" class="icon-btn" aria-label="Open accessibility settings">
+                        <span class="material-icons-round" aria-hidden="true">settings</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Voice Status Banner -->
-            <div id="voice-status" class="voice-status hidden">
-                <span class="material-icons-round" id="voice-status-icon">mic_off</span>
+            <div id="voice-status" class="voice-status hidden" role="alert">
+                <span class="material-icons-round" id="voice-status-icon" aria-hidden="true">mic_off</span>
                 <span id="voice-status-text"></span>
             </div>
 
             <!-- Response Card -->
-            <div id="response-card" class="response-card hidden" role="status" aria-live="polite">
-                <span class="material-icons-round response-icon">volume_up</span>
+            <div id="response-card" class="response-card hidden" role="status" aria-live="polite" aria-atomic="true">
+                <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
                 <p id="response-text"></p>
             </div>
 
             <!-- Recognized Text -->
-            <div id="recognized-card" class="recognized-card hidden">
+            <div id="recognized-card" class="recognized-card hidden" aria-live="polite">
                 <p id="recognized-text"></p>
             </div>
 
             <!-- Transaction List -->
             <div id="transactions-card" class="transactions-card hidden">
                 <h3>Recent Transactions</h3>
-                <div id="transactions-list"></div>
+                <div id="transactions-list" role="list"></div>
             </div>
 
             <!-- Spacer -->
-            <div class="spacer"></div>
+            <div class="spacer" aria-hidden="true"></div>
 
             <!-- Listening Indicator -->
-            <div id="listening-indicator" class="listening-indicator hidden">
-                <div class="listening-waves">
+            <div id="listening-indicator" class="listening-indicator hidden" role="status" aria-live="polite">
+                <div class="listening-waves" aria-hidden="true">
                     <span></span><span></span><span></span><span></span><span></span>
                 </div>
                 <p>Listening...</p>
             </div>
 
             <!-- Processing Indicator -->
-            <div id="processing-indicator" class="processing-indicator hidden">
-                <div class="spinner"></div>
+            <div id="processing-indicator" class="processing-indicator hidden" role="status" aria-label="Processing your command">
+                <div class="spinner" aria-hidden="true"></div>
             </div>
 
             <!-- Mic Button -->
-            <button id="mic-btn" class="mic-button" aria-label="Tap to speak a command">
-                <span class="material-icons-round">mic</span>
+            <button id="mic-btn" class="mic-button" aria-label="Tap to speak a banking command">
+                <span class="material-icons-round" aria-hidden="true">mic</span>
             </button>
-            <p class="mic-hint">Tap to speak</p>
+            <p class="mic-hint" aria-hidden="true">Tap to speak</p>
 
             <!-- Text Input (fallback + always available) -->
             <div class="text-input-area">
                 <div class="text-input-wrapper">
                     <input type="text" id="text-input" class="text-input"
                            placeholder="Type a command... e.g. check my balance"
-                           aria-label="Type a banking command">
+                           aria-label="Type a banking command and press Enter or tap Send">
                     <button id="send-btn" class="send-btn" aria-label="Send command">
-                        <span class="material-icons-round">send</span>
+                        <span class="material-icons-round" aria-hidden="true">send</span>
                     </button>
                 </div>
             </div>
 
             <!-- Quick Commands -->
-            <div class="quick-commands">
+            <div class="quick-commands" role="group" aria-label="Quick commands">
                 <button class="quick-cmd" data-cmd="Check my balance">Check Balance</button>
                 <button class="quick-cmd" data-cmd="Transfer 500 rupees to Rahul">Transfer Money</button>
                 <button class="quick-cmd" data-cmd="Request cheque book">Cheque Book</button>
@@ -115,55 +143,60 @@
 
             <!-- Recent Commands -->
             <div id="recent-commands" class="recent-commands hidden">
-                <div class="recent-header">
+                <div class="recent-header" aria-hidden="true">
                     <span class="material-icons-round">history</span>
                     <span>Recent</span>
                 </div>
-                <div id="recent-list" class="recent-list"></div>
+                <div id="recent-list" class="recent-list" aria-label="Recent commands"></div>
             </div>
         </div>
     </div>
 
     <!-- Settings Screen -->
     <div id="settings-screen" class="screen">
-        <div class="settings-container">
+        <div class="settings-container" role="main" aria-label="Accessibility settings">
             <div class="settings-header">
-                <button id="settings-back-btn" class="icon-btn" aria-label="Go back to home">
-                    <span class="material-icons-round">arrow_back</span>
+                <button id="settings-back-btn" class="icon-btn" aria-label="Go back to home screen">
+                    <span class="material-icons-round" aria-hidden="true">arrow_back</span>
                 </button>
                 <h2>Accessibility Settings</h2>
             </div>
 
+            <!-- Language -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">language</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">language</span>
                     <div>
                         <h3>Language</h3>
-                        <p>Select voice language</p>
+                        <p>Select voice recognition and speech language</p>
                     </div>
                 </div>
-                <div class="language-btns">
-                    <button class="lang-btn active" data-lang="en-IN">English</button>
-                    <button class="lang-btn" data-lang="hi-IN">Hindi</button>
+                <div class="language-btns" role="group" aria-label="Select language">
+                    <button class="lang-btn active" data-lang="en-IN"
+                            aria-pressed="true">English</button>
+                    <button class="lang-btn" data-lang="hi-IN"
+                            aria-pressed="false">Hindi</button>
                 </div>
             </div>
 
+            <!-- Voice -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">record_voice_over</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">record_voice_over</span>
                     <div>
                         <h3>Voice</h3>
                         <p>Choose speaking voice (Google/Microsoft voices sound most natural)</p>
                     </div>
                 </div>
-                <select id="voice-select" class="voice-select-dropdown" aria-label="Select voice">
+                <select id="voice-select" class="voice-select-dropdown" aria-label="Select assistant voice">
                     <option value="">Loading voices...</option>
                 </select>
             </div>
 
+            <!-- Speech Speed -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">speed</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">speed</span>
                     <div>
                         <h3>Speech Speed</h3>
                         <p>Adjust how fast the assistant speaks</p>
@@ -171,14 +204,15 @@
                 </div>
                 <div class="speed-control">
                     <input type="range" id="speech-rate" min="0.5" max="1.5" step="0.05" value="0.88"
-                           aria-label="Speech speed slider">
-                    <span id="speed-value">0.9x</span>
+                           aria-label="Speech speed: use left and right arrows to adjust">
+                    <span id="speed-value" aria-live="polite" aria-atomic="true">0.9x</span>
                 </div>
             </div>
 
+            <!-- Voice Pitch -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">tune</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">tune</span>
                     <div>
                         <h3>Voice Pitch</h3>
                         <p>Lower feels warmer, higher feels brighter</p>
@@ -186,63 +220,91 @@
                 </div>
                 <div class="speed-control">
                     <input type="range" id="pitch-slider" min="0.5" max="1.5" step="0.05" value="0.95"
-                           aria-label="Voice pitch slider">
-                    <span id="pitch-value">0.95</span>
+                           aria-label="Voice pitch: use left and right arrows to adjust">
+                    <span id="pitch-value" aria-live="polite" aria-atomic="true">0.95</span>
                 </div>
             </div>
 
+            <!-- Haptic Feedback -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">vibration</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">vibration</span>
                     <div>
                         <h3>Haptic Feedback</h3>
-                        <p>Vibrate on actions</p>
+                        <p>Vibrate on button presses and actions</p>
                     </div>
                 </div>
-                <label class="toggle">
-                    <input type="checkbox" id="haptic-toggle" checked>
+                <label class="toggle" aria-label="Toggle haptic feedback">
+                    <input type="checkbox" id="haptic-toggle" checked
+                           aria-label="Enable haptic feedback vibration">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
 
+            <!-- Text Size (Zoom) -->
             <div class="setting-card">
                 <div class="setting-info">
-                    <span class="material-icons-round setting-icon">text_fields</span>
+                    <span class="material-icons-round setting-icon" aria-hidden="true">format_size</span>
                     <div>
-                        <h3>Large Text</h3>
-                        <p>Always enabled. Minimum 18sp fonts.</p>
+                        <h3>Text Size</h3>
+                        <p>Make all text and controls larger or smaller</p>
                     </div>
                 </div>
+                <div class="zoom-setting-controls" role="group" aria-label="Text size adjustment">
+                    <div class="zoom-controls">
+                        <button class="zoom-btn zoom-btn-out zoom-out-trigger"
+                                aria-label="Decrease text size">A−</button>
+                        <span id="zoom-level-label" class="zoom-level-label"
+                              aria-live="polite" aria-atomic="true">Normal</span>
+                        <button class="zoom-btn zoom-btn-in zoom-in-trigger"
+                                aria-label="Increase text size">A+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Large Text (always on) -->
+            <div class="setting-card">
+                <div class="setting-info">
+                    <span class="material-icons-round setting-icon" aria-hidden="true">text_fields</span>
+                    <div>
+                        <h3>Large Text</h3>
+                        <p>Always enabled. Minimum 18sp base fonts throughout.</p>
+                    </div>
+                </div>
+                <span class="setting-badge" role="status" aria-label="Feature is always active">Active</span>
             </div>
         </div>
     </div>
 
     <!-- Transfer Screen -->
     <div id="transfer-screen" class="screen">
-        <div class="home-container">
+        <div class="home-container" role="main" aria-label="Money transfer">
 
             <!-- Top bar -->
             <div class="top-bar">
-                <button id="transfer-back-btn" class="icon-btn" aria-label="Go back to home">
-                    <span class="material-icons-round">arrow_back</span>
+                <button id="transfer-back-btn" class="icon-btn" aria-label="Cancel and go back to home">
+                    <span class="material-icons-round" aria-hidden="true">arrow_back</span>
                 </button>
                 <div style="display:flex;align-items:center;gap:8px">
-                    <span class="material-icons-round" style="color:var(--accent-blue,#42A5F5)">swap_horiz</span>
+                    <span class="material-icons-round" style="color:var(--accent-blue,#42A5F5)"
+                          aria-hidden="true">swap_horiz</span>
                     <h2 style="font-size:1.2rem;font-weight:700;margin:0">Transfer Money</h2>
                 </div>
-                <div style="width:40px"></div>
+                <div style="width:40px" aria-hidden="true"></div>
             </div>
 
             <!-- AI Response -->
-            <div id="transfer-response-card" class="response-card hidden" role="status" aria-live="polite">
-                <span class="material-icons-round response-icon">volume_up</span>
+            <div id="transfer-response-card" class="response-card hidden"
+                 role="status" aria-live="polite" aria-atomic="true">
+                <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
                 <p id="transfer-response-text"></p>
             </div>
 
             <!-- Beneficiary List (SelectingBeneficiary phase) -->
             <div id="transfer-beneficiary-section" class="transactions-card hidden">
                 <h3>Your Beneficiaries</h3>
-                <div id="transfer-beneficiary-list"></div>
+                <div id="transfer-beneficiary-list" role="list"
+                     aria-label="Select a beneficiary to transfer money"></div>
             </div>
 
             <!-- Selected Beneficiary (EnterAmount phase) -->
@@ -257,79 +319,86 @@
                 <div id="transfer-confirm-content"></div>
                 <div style="display:flex;gap:12px;margin-top:16px">
                     <button id="transfer-confirm-no-btn" class="quick-cmd"
-                            style="flex:1;background:#EF5350;color:#fff;border:none"
-                            aria-label="Cancel transfer">
-                        No, Cancel
+                            style="flex:1;background:#B71C1C;color:#fff;border:none"
+                            aria-label="Cancel this transfer">
+                        ✕ No, Cancel
                     </button>
                     <button id="transfer-confirm-yes-btn" class="quick-cmd"
-                            style="flex:1;background:#66BB6A;color:#fff;border:none"
-                            aria-label="Confirm transfer">
-                        Yes, Proceed
+                            style="flex:1;background:#004D40;color:#fff;border:none"
+                            aria-label="Confirm and proceed with transfer">
+                        ✓ Yes, Proceed
                     </button>
                 </div>
             </div>
 
             <!-- Biometric Auth (AwaitingBiometric phase) -->
             <div id="transfer-biometric-card" class="transactions-card hidden" style="text-align:center">
-                <div class="fingerprint-icon pulse" style="margin:0 auto 16px">
-                    <span class="material-icons-round" style="font-size:52px;color:var(--accent-blue,#42A5F5)">fingerprint</span>
+                <div class="fingerprint-icon pulse" style="margin:0 auto 16px" aria-hidden="true">
+                    <span class="material-icons-round"
+                          style="font-size:52px;color:var(--accent-blue,#42A5F5)">fingerprint</span>
                 </div>
                 <h3 style="margin-bottom:8px">Authenticate to Transfer</h3>
-                <p id="transfer-biometric-detail" class="auth-subtitle" style="margin-bottom:20px"></p>
+                <p id="transfer-biometric-detail" class="auth-subtitle" style="margin-bottom:20px"
+                   aria-live="polite"></p>
                 <button id="transfer-biometric-btn" class="auth-button" style="width:100%"
-                        aria-label="Tap to authenticate with fingerprint">
-                    <span class="material-icons-round">lock_open</span>
+                        aria-label="Tap to authenticate with fingerprint and authorise transfer">
+                    <span class="material-icons-round" aria-hidden="true">lock_open</span>
                     Tap to Authenticate (Demo)
                 </button>
             </div>
 
             <!-- Transfer Complete -->
-            <div id="transfer-complete-card" class="transactions-card hidden" style="text-align:center">
+            <div id="transfer-complete-card" class="transactions-card hidden" style="text-align:center"
+                 role="status" aria-live="polite">
                 <span class="material-icons-round"
-                      style="font-size:52px;color:#66BB6A;display:block;margin-bottom:8px">check_circle</span>
-                <h3 style="color:#66BB6A;margin-bottom:4px">Transfer Successful!</h3>
+                      style="font-size:52px;color:#00BFA5;display:block;margin-bottom:8px"
+                      aria-hidden="true">check_circle</span>
+                <h3 style="color:#00BFA5;margin-bottom:4px">Transfer Successful!</h3>
                 <div id="transfer-complete-content"></div>
                 <button id="transfer-done-btn" class="auth-button"
-                        style="margin-top:16px;width:100%" aria-label="Done, go back to home">
-                    <span class="material-icons-round">home</span>
+                        style="margin-top:16px;width:100%" aria-label="Done, return to home screen">
+                    <span class="material-icons-round" aria-hidden="true">home</span>
                     Done
                 </button>
             </div>
 
             <!-- Recognized Text -->
-            <div id="transfer-recognized-card" class="recognized-card hidden">
+            <div id="transfer-recognized-card" class="recognized-card hidden" aria-live="polite">
                 <p id="transfer-recognized-text"></p>
             </div>
 
-            <div class="spacer"></div>
+            <div class="spacer" aria-hidden="true"></div>
 
             <!-- Listening Indicator -->
-            <div id="transfer-listening-indicator" class="listening-indicator hidden">
-                <div class="listening-waves">
+            <div id="transfer-listening-indicator" class="listening-indicator hidden"
+                 role="status" aria-live="polite">
+                <div class="listening-waves" aria-hidden="true">
                     <span></span><span></span><span></span><span></span><span></span>
                 </div>
                 <p>Listening...</p>
             </div>
 
             <!-- Processing -->
-            <div id="transfer-processing-indicator" class="processing-indicator hidden">
-                <div class="spinner"></div>
+            <div id="transfer-processing-indicator" class="processing-indicator hidden"
+                 role="status" aria-label="Processing transfer">
+                <div class="spinner" aria-hidden="true"></div>
             </div>
 
             <!-- Mic Button -->
-            <button id="transfer-mic-btn" class="mic-button" aria-label="Tap to speak your response">
-                <span class="material-icons-round">mic</span>
+            <button id="transfer-mic-btn" class="mic-button"
+                    aria-label="Tap to speak — say a name, amount, yes or no">
+                <span class="material-icons-round" aria-hidden="true">mic</span>
             </button>
-            <p class="mic-hint">Tap to speak</p>
+            <p class="mic-hint" aria-hidden="true">Tap to speak</p>
 
             <!-- Text Input Fallback -->
             <div class="text-input-area">
                 <div class="text-input-wrapper">
                     <input type="text" id="transfer-text-input" class="text-input"
                            placeholder="Or type here (name / amount / yes / no)..."
-                           aria-label="Type your response">
-                    <button id="transfer-send-btn" class="send-btn" aria-label="Send">
-                        <span class="material-icons-round">send</span>
+                           aria-label="Type a beneficiary name, amount, yes or no, then press Enter">
+                    <button id="transfer-send-btn" class="send-btn" aria-label="Send typed response">
+                        <span class="material-icons-round" aria-hidden="true">send</span>
                     </button>
                 </div>
             </div>

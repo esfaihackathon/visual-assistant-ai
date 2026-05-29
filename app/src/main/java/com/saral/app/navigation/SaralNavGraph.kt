@@ -43,6 +43,8 @@ fun SaralNavGraph(
     onSpeechRateChanged: (Float) -> Unit,
     onVoiceSelected: (String) -> Unit,
     onHapticToggled: (Boolean) -> Unit,
+    fontScale: Float,
+    onFontScaleChanged: (Float) -> Unit,
     onTransferMicClick: () -> Unit,
     onRequestTransferBiometric: () -> Unit,
     isListening: Boolean,
@@ -110,16 +112,18 @@ fun SaralNavGraph(
 
         composable(Routes.SETTINGS) {
             SettingsScreen(
-                onBack = { navController.popBackStack() },
-                availableVoices = availableVoices,
-                selectedVoice = selectedVoice,
-                selectedLanguage = selectedLanguage,
-                speechRate = speechRate,
-                hapticEnabled = hapticEnabled,
-                onLanguageSelected = onLanguageSelected,
+                onBack            = { navController.popBackStack() },
+                availableVoices   = availableVoices,
+                selectedVoice     = selectedVoice,
+                selectedLanguage  = selectedLanguage,
+                speechRate        = speechRate,
+                hapticEnabled     = hapticEnabled,
+                fontScale         = fontScale,
+                onLanguageSelected  = onLanguageSelected,
                 onSpeechRateChanged = onSpeechRateChanged,
-                onVoiceSelected = onVoiceSelected,
-                onHapticToggled = onHapticToggled
+                onVoiceSelected     = onVoiceSelected,
+                onHapticToggled     = onHapticToggled,
+                onFontScaleChanged  = onFontScaleChanged
             )
         }
 

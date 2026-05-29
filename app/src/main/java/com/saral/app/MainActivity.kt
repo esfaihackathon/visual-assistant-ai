@@ -11,9 +11,17 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
@@ -46,12 +54,20 @@ class MainActivity : FragmentActivity() {
     private var navController: androidx.navigation.NavHostController? = null
     private var pendingBiometricSuccessAction: (() -> Unit)? = null
 
+    // ── Session timeout (Feature 2) ──────────────────────────────────────────
+    private companion object {
+        const val SESSION_IDLE_MS    = 3 * 60 * 1000L   // 3 min before warning
+        const val SESSION_WARNING_MS = 30 * 1000L        // 30 s from warning to expiry
+    }
+    private var sessionJob: Job? = null
+
     private val ttsReadyState = mutableStateOf(false)
     private val availableVoicesState = mutableStateOf<List<String>>(emptyList())
     private val selectedVoiceNameState = mutableStateOf<String?>(null)
     private val selectedLanguageState = mutableStateOf("English")
     private val speechRateState = mutableStateOf(0.88f)
     private val hapticEnabledState = mutableStateOf(true)
+    private val fontScaleState = mutableFloatStateOf(1.0f)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -72,7 +88,7 @@ class MainActivity : FragmentActivity() {
         authViewModel.setSpeakCallback { text ->
             ttsManager.speak(text)
         }
-
+        // Start session timer once the user reaches home (auth success fires this callback)
         homeViewModel.setSpeakCallback { text ->
             ttsManager.speak(text)
         }
@@ -82,60 +98,68 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            SaralTheme {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    color = NavyDark
-                ) {
-                    val navCtrl = rememberNavController()
-                    navController = navCtrl
+            val fontScale by fontScaleState
+            val systemDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(systemDensity.density, fontScale)
+            ) {
+                SaralTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color    = NavyDark
+                    ) {
+                        val navCtrl = rememberNavController()
+                        navController = navCtrl
 
-                    val isListening by speechManager.isListening.collectAsState()
-                    val ttsReady by ttsReadyState
-                    val availableVoices by availableVoicesState
-                    val selectedVoiceName by selectedVoiceNameState
-                    val selectedLanguage by selectedLanguageState
-                    val speechRate by speechRateState
-                    val hapticEnabled by hapticEnabledState
+                        val isListening     by speechManager.isListening.collectAsState()
+                        val availableVoices by availableVoicesState
+                        val selectedVoiceName by selectedVoiceNameState
+                        val selectedLanguage  by selectedLanguageState
+                        val speechRate        by speechRateState
+                        val hapticEnabled     by hapticEnabledState
 
-                    SaralNavGraph(
-                        navController = navCtrl,
-                        onSpeak = { text -> ttsManager.speak(text) },
-                        onAuthenticate = { showBiometricPrompt { authViewModel.onBiometricSuccess() } },
-                        onMicClick = { onMicButtonClick() },
-                        onTextCommand = { command -> homeViewModel.onVoiceResult(command) },
-                        onQuickCommand = { command -> homeViewModel.onVoiceResult(command) },
-                        availableVoices = availableVoices,
-                        selectedVoice = selectedVoiceName,
-                        selectedLanguage = selectedLanguage,
-                        speechRate = speechRate,
-                        hapticEnabled = hapticEnabled,
-                        onLanguageSelected = { language ->
-                            selectedLanguageState.value = language
-                            val locale = if (language == "Hindi") Locale("hi", "IN") else Locale("en", "IN")
-                            ttsManager.setLanguage(locale)
-                            speechManager.setLanguage(locale)
-                            selectedVoiceNameState.value = ttsManager.getSelectedVoiceName()
-                        },
-                        onSpeechRateChanged = { rate ->
-                            speechRateState.value = rate
-                            ttsManager.setSpeechRate(rate)
-                        },
-                        onVoiceSelected = { voiceName ->
-                            selectedVoiceNameState.value = voiceName
-                            ttsManager.setVoice(voiceName)
-                        },
-                        onHapticToggled = { enabled ->
-                            hapticEnabledState.value = enabled
-                        },
-                        onTransferMicClick = { onTransferMicButtonClick() },
-                        onRequestTransferBiometric = { showBiometricPrompt { transferViewModel.onBiometricSuccess() } },
-                        isListening = isListening,
-                        homeViewModel = homeViewModel,
-                        authViewModel = authViewModel,
-                        transferViewModel = transferViewModel
-                    )
+                        SaralNavGraph(
+                            navController   = navCtrl,
+                            onSpeak         = { text -> ttsManager.speak(text) },
+                            onAuthenticate  = { showBiometricPrompt { authViewModel.onBiometricSuccess(); resetSessionTimeout() } },
+                            onMicClick      = { onMicButtonClick() },
+                            onTextCommand   = { command -> resetSessionTimeout(); homeViewModel.onVoiceResult(command) },
+                            onQuickCommand  = { command -> resetSessionTimeout(); homeViewModel.onVoiceResult(command) },
+                            availableVoices = availableVoices,
+                            selectedVoice   = selectedVoiceName,
+                            selectedLanguage = selectedLanguage,
+                            speechRate      = speechRate,
+                            hapticEnabled   = hapticEnabled,
+                            fontScale       = fontScale,
+                            onLanguageSelected = { language ->
+                                selectedLanguageState.value = language
+                                val locale = if (language == "Hindi") Locale("hi", "IN") else Locale("en", "IN")
+                                ttsManager.setLanguage(locale)
+                                speechManager.setLanguage(locale)
+                                selectedVoiceNameState.value = ttsManager.getSelectedVoiceName()
+                            },
+                            onSpeechRateChanged = { rate ->
+                                speechRateState.value = rate
+                                ttsManager.setSpeechRate(rate)
+                            },
+                            onVoiceSelected = { voiceName ->
+                                selectedVoiceNameState.value = voiceName
+                                ttsManager.setVoice(voiceName)
+                            },
+                            onHapticToggled = { enabled ->
+                                hapticEnabledState.value = enabled
+                            },
+                            onFontScaleChanged = { scale ->
+                                fontScaleState.floatValue = scale
+                            },
+                            onTransferMicClick = { onTransferMicButtonClick() },
+                            onRequestTransferBiometric = { showBiometricPrompt { transferViewModel.onBiometricSuccess() } },
+                            isListening    = isListening,
+                            homeViewModel  = homeViewModel,
+                            authViewModel  = authViewModel,
+                            transferViewModel = transferViewModel
+                        )
+                    }
                 }
             }
         }
@@ -211,7 +235,26 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    // Reset inactivity timer on every user interaction
+    fun resetSessionTimeout() {
+        sessionJob?.cancel()
+        sessionJob = lifecycleScope.launch {
+            delay(SESSION_IDLE_MS)
+            ttsManager.speak(
+                "Your session will expire in 30 seconds due to inactivity. " +
+                "Tap or speak to continue."
+            )
+            delay(SESSION_WARNING_MS)
+            authViewModel.reset()
+            navController?.navigate(com.saral.app.navigation.Routes.AUTH) {
+                popUpTo(0) { inclusive = true }
+            }
+            ttsManager.speak("Session expired. Please authenticate again.")
+        }
+    }
+
     private fun onMicButtonClick() {
+        resetSessionTimeout()
         hapticManager.vibrateShort()
         if (speechManager.isListening.value) {
             speechManager.stopListening()
@@ -227,6 +270,7 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun onTransferMicButtonClick() {
+        resetSessionTimeout()
         hapticManager.vibrateShort()
         if (speechManager.isListening.value) {
             speechManager.stopListening()

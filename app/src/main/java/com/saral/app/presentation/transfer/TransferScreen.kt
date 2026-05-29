@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.CheckCircle
@@ -72,9 +73,11 @@ import androidx.compose.material.icons.filled.Fingerprint
 import com.saral.app.domain.models.Beneficiary
 import com.saral.app.ui.theme.AccentBlue
 import com.saral.app.ui.theme.AccentGreen
+import com.saral.app.ui.theme.AccentYellow
 import com.saral.app.ui.theme.ErrorRed
 import com.saral.app.ui.theme.NavyDark
 import com.saral.app.ui.theme.NavyLight
+import com.saral.app.ui.theme.PrimaryBtn
 import com.saral.app.ui.theme.SurfaceCard
 import com.saral.app.ui.theme.TextLight
 import com.saral.app.ui.theme.TextWhite
@@ -97,6 +100,15 @@ fun TransferScreen(
     LaunchedEffect(beneficiaries) {
         if (beneficiaries.isNotEmpty()) {
             viewModel.onScreenLoad()
+        }
+    }
+
+    // Feature 1: voice "Done / Main Menu" navigation from Complete or Failed screen
+    // Callback wired once per screen entry; mirrors the speakCallback pattern.
+    LaunchedEffect(viewModel) {
+        viewModel.setNavigateCallback {
+            viewModel.reset()
+            onBack()
         }
     }
 
@@ -196,7 +208,10 @@ fun TransferScreen(
                 label = "transfer_step"
             ) { currentStep ->
                 when (currentStep) {
-                    is TransferStep.SelectingBeneficiary -> BeneficiaryListContent(beneficiaries)
+                    is TransferStep.SelectingBeneficiary -> BeneficiaryListContent(
+                        beneficiaries = beneficiaries,
+                        onSelect      = { viewModel.onBeneficiarySelected(it) }
+                    )
                     is TransferStep.EnterAmount -> EnterAmountContent(currentStep.beneficiary)
                     is TransferStep.ConfirmTransfer -> ConfirmTransferContent(
                         beneficiary = currentStep.beneficiary,
@@ -262,9 +277,9 @@ fun TransferScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Only show mic when the transfer is not yet complete/failed/awaiting biometric
-            val isTerminal = step is TransferStep.Complete || step is TransferStep.Failed ||
-                    step is TransferStep.AwaitingBiometric
+            // Hide mic only while fingerprint is pending; Complete/Failed keep mic so user
+            // can say "Done" or "Main Menu" to navigate home (Feature 1)
+            val isTerminal = step is TransferStep.AwaitingBiometric
             if (!isTerminal) {
                 if (isListening) {
                     Text(
@@ -292,7 +307,10 @@ fun TransferScreen(
 }
 
 @Composable
-private fun BeneficiaryListContent(beneficiaries: List<Beneficiary>) {
+private fun BeneficiaryListContent(
+    beneficiaries: List<Beneficiary>,
+    onSelect: (Beneficiary) -> Unit
+) {
     if (beneficiaries.isEmpty()) {
         Box(
             modifier = Modifier
@@ -311,18 +329,30 @@ private fun BeneficiaryListContent(beneficiaries: List<Beneficiary>) {
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Your Beneficiaries",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TextWhite
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Your Beneficiaries",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextWhite
+                )
+                // Feature 3: "Tap or say a name" hint
+                Text(
+                    text = "Tap or say a name",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AccentBlue
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             beneficiaries.forEachIndexed { index, b ->
-                BeneficiaryRow(beneficiary = b)
+                BeneficiaryRow(beneficiary = b, onSelect = { onSelect(b) })
                 if (index < beneficiaries.lastIndex) {
                     HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = 4.dp),
                         color = NavyLight
                     )
                 }
@@ -332,26 +362,38 @@ private fun BeneficiaryListContent(beneficiaries: List<Beneficiary>) {
 }
 
 @Composable
-private fun BeneficiaryRow(beneficiary: Beneficiary) {
+private fun BeneficiaryRow(beneficiary: Beneficiary, onSelect: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(
+                role = Role.Button,
+                onClickLabel = "Select ${beneficiary.name}"
+            ) { onSelect() }
+            .padding(vertical = 10.dp, horizontal = 4.dp)
+            .semantics {
+                contentDescription =
+                    "Select ${beneficiary.name}, ${beneficiary.bankName}, account ending ${beneficiary.accountLast4}"
+                role = Role.Button
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(CircleShape)
-                .background(NavyLight),
+                .background(AccentBlue.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.Filled.Person,
                 contentDescription = null,
                 tint = AccentBlue,
-                modifier = Modifier.size(22.dp)
+                modifier = Modifier.size(24.dp)
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = beneficiary.name,
@@ -361,10 +403,17 @@ private fun BeneficiaryRow(beneficiary: Beneficiary) {
             )
             Text(
                 text = "${beneficiary.bankName}  •  ****${beneficiary.accountLast4}",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = TextLight
             )
         }
+        // Chevron affordance — signals tappable row
+        Icon(
+            Icons.AutoMirrored.Filled.ArrowForwardIos,
+            contentDescription = null,
+            tint = AccentBlue.copy(alpha = 0.6f),
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 
@@ -628,10 +677,37 @@ private fun TransferCompleteContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = onDone,
+            // Feature 1: voice hint for returning to home
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                colors   = CardDefaults.cardColors(containerColor = AccentBlue.copy(alpha = 0.08f)),
+                shape    = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = null,
+                        tint     = AccentBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text  = "Say \"Done\" or \"Main Menu\" to go home",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextLight
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick  = onDone,
+                modifier = Modifier.fillMaxWidth(),
+                colors   = ButtonDefaults.buttonColors(containerColor = PrimaryBtn)
             ) {
                 Text("Done", color = Color.White, fontWeight = FontWeight.SemiBold)
             }

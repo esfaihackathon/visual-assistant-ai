@@ -39,6 +39,8 @@ let currentScreen = "splash";
 let isListening = false;
 let awaitingConfirmation = false;
 let awaitingTransactionCount = false;
+let awaitingPostTransactionChoice = false; // true after transactions are read
+let awaitingSimpleFollowUp = false;       // true after balance or cheque book
 let pendingTransfer = { amount: 0, recipient: "" };
 let recentCommands = [];
 
@@ -46,6 +48,13 @@ let recentCommands = [];
 let currentTransferPhase = null; // 'selecting' | 'entering_amount' | 'confirming' | 'authenticating' | 'complete'
 let selectedBeneficiary = null;
 let pendingTransferAmount = 0;
+
+// ── Feature 2: Session timeout ────────────────────────────────────────────────
+const SESSION_IDLE_MS    = 3 * 60 * 1000;  // 3 min of inactivity → warning
+const SESSION_WARNING_MS = 30 * 1000;       // 30 s from warning → expiry
+let sessionIdleTimer    = null;
+let sessionExpireTimer  = null;
+let sessionCountdownInterval = null;
 let speechRate = 0.88;
 let selectedPitch = 0.95;
 let selectedLang = "en-IN";
@@ -404,6 +413,7 @@ function parseIntent(text) {
 
 // ========== Intent Handlers ==========
 function handleVoiceInput(text) {
+    resetSessionTimer();
     // Route to transfer screen handlers
     if (currentScreen === "transfer") {
         handleTransferVoiceInput(text);
@@ -411,6 +421,21 @@ function handleVoiceInput(text) {
     }
 
     addRecentCommand(text);
+
+    // Post-transaction follow-up takes priority over normal intent parsing
+    if (awaitingPostTransactionChoice) {
+        showProcessing(false);
+        handlePostTransactionChoice(text);
+        return;
+    }
+
+    // Post-balance / post-cheque-book simple follow-up
+    if (awaitingSimpleFollowUp) {
+        showProcessing(false);
+        handleSimpleFollowUp(text);
+        return;
+    }
+
     showProcessing(true);
 
     const intent = parseIntent(text);
@@ -458,7 +483,9 @@ function handleIntent(intent) {
 
 function handleBalance() {
     const amt = formatAmount(mockAccount.balance);
-    respond(`In your ${mockAccount.bankName} savings account ending with ${mockAccount.accountLast4}, you have ${amt} rupees available.`);
+    const response = `In your ${mockAccount.bankName} savings account ending with ${mockAccount.accountLast4}, you have ${amt} rupees available.`;
+    awaitingSimpleFollowUp = true;
+    respond(`${response} Say main menu to go home, or tell me what you'd like to do next.`);
 }
 
 function handleTransfer(intent) {
@@ -467,19 +494,22 @@ function handleTransfer(intent) {
 }
 
 function handleConfirmYes() {
+    awaitingPostTransactionChoice = false;
+    awaitingSimpleFollowUp = false;
     respond("There is nothing to confirm right now. How can I help you?");
 }
 
 function handleConfirmNo() {
-    if (awaitingTransactionCount) {
-        awaitingTransactionCount = false;
-    }
+    awaitingTransactionCount = false;
+    awaitingPostTransactionChoice = false;
+    awaitingSimpleFollowUp = false;
     respond("Okay. How can I help you?");
 }
 
 // ========== Transfer Screen ==========
 
 function showTransferScreen() {
+    resetSessionTimer();
     showScreen("transfer");
     currentTransferPhase = "selecting";
     selectedBeneficiary = null;
@@ -496,36 +526,75 @@ function showTransferScreen() {
     document.getElementById("transfer-beneficiary-section").classList.remove("hidden");
 
     const listText = mockBeneficiaries.map((b, i) => `${i + 1}. ${b.name}, ${b.bank}`).join(". ");
-    transferRespond(`Would you like to transfer money to one of your beneficiaries? Here is your list. ${listText}. Please say the name of the beneficiary.`);
+    transferRespond(
+        `Would you like to transfer money to one of your beneficiaries? ` +
+        `Here is your list. ${listText}. ` +
+        `Tap a name on screen, or say the name of the beneficiary.`
+    );
 }
 
+// Feature 3: direct tap selection — show beneficiary rows as large tappable buttons
 function renderBeneficiaryList() {
     const listEl = document.getElementById("transfer-beneficiary-list");
     listEl.innerHTML = mockBeneficiaries.map((b, i) => `
-        <div class="txn-row beneficiary-item" data-idx="${i}"
+        <div class="beneficiary-item" data-idx="${i}"
              role="button" tabindex="0"
-             style="cursor:pointer;padding:8px 0;${i < mockBeneficiaries.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:4px' : ''}">
-            <div style="display:flex;align-items:center;gap:12px">
-                <div style="width:38px;height:38px;border-radius:50%;background:rgba(66,165,245,0.15);
-                            display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <span class="material-icons-round" style="color:#42A5F5;font-size:20px">person</span>
-                </div>
-                <div>
-                    <div class="txn-desc">${b.name}</div>
-                    <div class="txn-date">${b.bank} &bull; ****${b.accountLast4}</div>
-                </div>
+             aria-label="Select ${b.name}, ${b.bank}"
+             style="display:flex;align-items:center;gap:14px;padding:14px 8px;
+                    ${i < mockBeneficiaries.length - 1 ? 'border-bottom:1px solid rgba(255,255,255,0.07);' : ''}">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(77,158,255,0.15);
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <span class="material-icons-round" style="color:var(--primary,#4D9EFF);font-size:22px"
+                      aria-hidden="true">person</span>
             </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-size:1rem;font-weight:600;color:var(--t1,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.name}</div>
+                <div style="font-size:0.89rem;color:var(--t2,#B2CCE8);margin-top:2px">${b.bank} &bull; ****${b.accountLast4}</div>
+            </div>
+            <span class="material-icons-round" style="color:rgba(77,158,255,0.55);font-size:1.11rem;flex-shrink:0"
+                  aria-hidden="true">chevron_right</span>
         </div>
     `).join("");
 
     listEl.querySelectorAll(".beneficiary-item").forEach(row => {
         const select = () => {
+            resetSessionTimer();
             const b = mockBeneficiaries[parseInt(row.dataset.idx)];
-            handleBeneficiarySelection(b.name);
+            handleBeneficiaryDirectSelect(b);
         };
         row.addEventListener("click", select);
-        row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") select(); });
+        row.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); } });
     });
+}
+
+// Feature 3: tap selects beneficiary directly without voice name-matching
+function handleBeneficiaryDirectSelect(b) {
+    selectedBeneficiary = b;
+    currentTransferPhase = "entering_amount";
+
+    document.getElementById("transfer-beneficiary-section").classList.add("hidden");
+    document.getElementById("transfer-selected-content").innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <div style="width:44px;height:44px;border-radius:50%;background:rgba(77,158,255,0.15);
+                        display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <span class="material-icons-round" style="color:var(--primary,#4D9EFF);font-size:24px">person</span>
+            </div>
+            <div>
+                <div style="font-size:1rem;font-weight:600">${b.name}</div>
+                <div style="font-size:0.89rem;color:var(--t2,#B2CCE8)">${b.bank} &bull; ****${b.accountLast4}</div>
+            </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;
+                    display:flex;align-items:center;gap:8px">
+            <span class="material-icons-round" style="color:var(--success,#00BFA5)">mic</span>
+            <span style="color:var(--t2,#B2CCE8)">Say the amount to transfer</span>
+        </div>
+    `;
+    document.getElementById("transfer-selected-card").classList.remove("hidden");
+    transferRespond(
+        `You selected ${b.name}, ${b.bank} account ending ${b.accountLast4}. ` +
+        `How much would you like to transfer? Please say the amount.`
+    );
 }
 
 function matchTransferBeneficiary(text) {
@@ -543,12 +612,30 @@ function matchTransferBeneficiary(text) {
 
 function handleTransferVoiceInput(text) {
     if (!text.trim()) return;
+    resetSessionTimer();
     showRecognizedText(text);
     switch (currentTransferPhase) {
         case "selecting":       handleBeneficiarySelection(text); break;
         case "entering_amount": handleTransferAmountInput(text);  break;
         case "confirming":      handleTransferConfirmation(text); break;
-        default: break; // authenticating / complete: ignore voice
+        case "authenticating":  break; // fingerprint pending — ignore voice
+        case "complete":        handleTransferCompleteVoice(text); break;
+        default: break;
+    }
+}
+
+// Feature 1: voice navigation from the transfer-complete screen
+function handleTransferCompleteVoice(text) {
+    const lower = text.toLowerCase().trim();
+    const isDone = /^(done|home|main menu|go home|go back|back|exit|finish|ok|okay|return|menu|yes)$/.test(lower);
+    if (isDone) {
+        vibrate(50);
+        speak("Returning to main menu.", () => {
+            currentTransferPhase = null;
+            showScreen("home");
+        });
+    } else {
+        transferRespond("Transfer is complete. Say Done or Main Menu to return home, or tap the Done button.");
     }
 }
 
@@ -681,14 +768,23 @@ function executeWebTransfer() {
                 <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin-bottom:12px">
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="color:var(--text-light,#90A4AE)">Remaining Balance</span>
-                    <span style="font-weight:700;color:#42A5F5;font-size:1.1rem">&#8377;${balDisplay}</span>
+                    <span style="font-weight:700;color:var(--primary,#4D9EFF);font-size:1.1rem">&#8377;${balDisplay}</span>
                 </div>
+            </div>
+            <div class="voice-hint-row" style="margin-top:14px">
+                <span class="material-icons-round" aria-hidden="true">mic</span>
+                Say <strong>"Done"</strong> or <strong>"Main Menu"</strong> to go home
             </div>
         `;
         document.getElementById("transfer-complete-card").classList.remove("hidden");
 
         vibrateSuccess();
-        transferRespond(`Transfer successful! ${amtDisplay} rupees have been sent to ${b.name}. Your account balance is now ${balDisplay} rupees. Transaction reference number ${txnId}.`);
+        transferRespond(
+            `Transfer successful! ${amtDisplay} rupees have been sent to ${b.name}. ` +
+            `Your account balance is now ${balDisplay} rupees. ` +
+            `Transaction reference ${txnId}. ` +
+            `Say Done or Main Menu to return home.`
+        );
     }, 1000);
 }
 
@@ -700,17 +796,37 @@ function transferRespond(text) {
 }
 
 function handleChequeBook() {
-    respond("Your cheque book request has been registered successfully and will be delivered within 5 working days.");
+    const response = "Your cheque book request has been registered successfully and will be delivered within 5 working days.";
+    awaitingSimpleFollowUp = true;
+    respond(`${response} Say main menu to go home, or tell me what you'd like to do next.`);
     vibrateSuccess();
+}
+
+// Handles the single follow-up after balance or cheque book
+function handleSimpleFollowUp(text) {
+    awaitingSimpleFollowUp = false;
+    const lower = text.toLowerCase().trim();
+    const wantsHome = /main menu|home|done|back|exit|okay|no|nothing|enough|stop/.test(lower);
+    if (wantsHome) {
+        respond("Okay! How else can I help you? You can check balance, transfer money, request cheque book, or ask for help.");
+    } else {
+        // Treat as a fresh command
+        const intent = parseIntent(text);
+        setTimeout(() => {
+            showProcessing(false);
+            handleIntent(intent);
+        }, 300);
+    }
 }
 
 // Step 1 — ask the user how many transactions they want to hear
 function handleAskTransactionCount() {
     awaitingTransactionCount = true;
+    awaitingPostTransactionChoice = false;
     respond("Do you want to hear the last transaction, last 5 transactions, or last 10 transactions?");
 }
 
-// Step 2 — read out N transactions after the user responds
+// Step 2 — read out N transactions, then ask what user wants next
 function handleTransactionCount(count) {
     awaitingTransactionCount = false;
     const subset = mockTransactions.slice(0, count);
@@ -721,24 +837,44 @@ function handleTransactionCount(count) {
         return;
     }
 
-    let message;
+    let details;
     if (count === 1) {
         const t = subset[0];
         const action = t.type === "CREDIT" ? "credited" : "debited";
-        message = `Your last transaction: ${formatAmount(t.amount)} rupees ${action} for ${t.description} on ${t.date}.`;
+        details = `Your last transaction: ${formatAmount(t.amount)} rupees ${action} for ${t.description} on ${t.date}.`;
     } else {
-        message = `Here are your last ${subset.length} transactions. `;
+        details = `Here are your last ${subset.length} transactions. `;
         subset.forEach((t, i) => {
             const action = t.type === "CREDIT" ? "credited" : "debited";
-            message += `${i + 1}. ${t.description}, ${formatAmount(t.amount)} rupees ${action} on ${t.date}. `;
+            details += `${i + 1}. ${t.description}, ${formatAmount(t.amount)} rupees ${action} on ${t.date}. `;
         });
-        message = message.trim();
+        details = details.trim();
     }
 
-    respond(message);
+    // Follow-up prompt after reading transactions
+    awaitingPostTransactionChoice = true;
+    respond(`${details} Would you like to hear more transactions, or say main menu to go back home?`);
 }
 
-// Query — search transactions by keyword
+// Handle user's post-transaction choice
+function handlePostTransactionChoice(text) {
+    const lower = text.toLowerCase().trim();
+    const wantsMore = /more|another|yes|again|transaction|last|hear|show/.test(lower);
+    const wantsHome = /main menu|home|done|no|back|enough|stop|okay|that.s all|exit/.test(lower);
+
+    if (wantsMore) {
+        awaitingPostTransactionChoice = false;
+        handleAskTransactionCount();
+    } else if (wantsHome) {
+        awaitingPostTransactionChoice = false;
+        respond("Okay! How else can I help you? You can check balance, transfer money, request cheque book, or ask for help.");
+    } else {
+        // Re-prompt without clearing the flag
+        respond("Say 'more transactions' to hear more, or 'main menu' to go back home.");
+    }
+}
+
+// Query — search transactions by keyword, then follow-up
 function handleQueryTransaction(keyword) {
     const matches = mockTransactions.filter(t =>
         t.description.toLowerCase().includes(keyword.toLowerCase())
@@ -751,11 +887,12 @@ function handleQueryTransaction(keyword) {
 
     const t = matches[0];
     const amt = formatAmount(t.amount);
-    const response = t.type === "CREDIT"
+    const details = t.type === "CREDIT"
         ? `Yes, ${t.description} of ${amt} rupees was credited on ${t.date}.`
         : `Yes, a payment of ${amt} rupees was made on ${t.date} for ${t.description}.`;
 
-    respond(response);
+    awaitingPostTransactionChoice = true;
+    respond(`${details} Would you like to check another transaction, or say main menu to go back?`);
 }
 
 function handleHelp() {
@@ -792,13 +929,14 @@ function showRecognizedText(text) {
 
 function showTransactions(transactions) {
     els.transactionsList.innerHTML = transactions.map(txn => `
-        <div class="txn-row">
+        <div class="txn-row" role="listitem"
+             aria-label="${txn.description}, ${txn.type === "DEBIT" ? "debit" : "credit"} of ${txn.amount.toLocaleString("en-IN")} rupees on ${txn.date}">
             <div>
                 <div class="txn-desc">${txn.description}</div>
                 <div class="txn-date">${txn.date}</div>
             </div>
-            <div class="txn-amount ${txn.type.toLowerCase()}">
-                ${txn.type === "DEBIT" ? "-" : "+"}&#8377;${txn.amount.toLocaleString("en-IN")}
+            <div class="txn-amount ${txn.type.toLowerCase()}" aria-hidden="true">
+                ${txn.type === "DEBIT" ? "−" : "+"}&#8377;${txn.amount.toLocaleString("en-IN")}
             </div>
         </div>
     `).join("");
@@ -863,6 +1001,52 @@ function formatAmount(amount) {
     return amount.toLocaleString("en-IN");
 }
 
+// ========== Session Timeout (Feature 2) ==========
+function resetSessionTimer() {
+    // Don't run timer on splash / auth screens
+    if (currentScreen === "splash" || currentScreen === "auth") return;
+
+    clearTimeout(sessionIdleTimer);
+    clearTimeout(sessionExpireTimer);
+    clearInterval(sessionCountdownInterval);
+    hideSessionWarning();
+
+    sessionIdleTimer = setTimeout(() => {
+        showSessionWarning();
+        let remaining = Math.round(SESSION_WARNING_MS / 1000);
+        const countEl = document.getElementById("session-countdown");
+        sessionCountdownInterval = setInterval(() => {
+            remaining--;
+            if (countEl) countEl.textContent = remaining;
+            if (remaining <= 0) clearInterval(sessionCountdownInterval);
+        }, 1000);
+        sessionExpireTimer = setTimeout(expireSession, SESSION_WARNING_MS);
+    }, SESSION_IDLE_MS);
+}
+
+function showSessionWarning() {
+    const banner = document.getElementById("session-warning-banner");
+    if (banner) banner.classList.remove("hidden");
+    speak("Your session will expire in 30 seconds due to inactivity. Tap or speak to continue.");
+}
+
+function hideSessionWarning() {
+    const banner = document.getElementById("session-warning-banner");
+    if (banner) banner.classList.add("hidden");
+    const countEl = document.getElementById("session-countdown");
+    if (countEl) countEl.textContent = "30";
+}
+
+function expireSession() {
+    clearInterval(sessionCountdownInterval);
+    hideSessionWarning();
+    currentTransferPhase = null;
+    stopSpeaking();
+    speak("Session expired due to inactivity. Please authenticate again.", () => {
+        showScreen("auth");
+    });
+}
+
 // ========== App Flow ==========
 function startApp() {
     showScreen("splash");
@@ -883,12 +1067,24 @@ function startApp() {
 
 // ========== Event Listeners ==========
 
-// Auth — biometric tap goes directly to home
+// Global activity listener — any tap/keypress resets the session timer
+document.addEventListener("click",   () => resetSessionTimer(), { passive: true });
+document.addEventListener("keydown",  () => resetSessionTimer(), { passive: true });
+document.addEventListener("touchstart", () => resetSessionTimer(), { passive: true });
+
+// Session warning "Stay" button
+document.getElementById("session-continue-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    resetSessionTimer();
+});
+
+// Auth — biometric tap goes directly to home; start session timer on login
 els.authBtn.addEventListener("click", () => {
     vibrate(100);
     vibrateSuccess();
     speak("Biometric scan successful. Welcome.", () => {
         showScreen("home");
+        resetSessionTimer();   // start session clock after login
         speak("You can say: check balance, transfer money, request cheque book, show recent transactions, or help.");
     });
 });
@@ -1032,6 +1228,63 @@ document.getElementById("transfer-done-btn").addEventListener("click", () => {
 // Update quick command to trigger guided transfer flow
 document.querySelectorAll(".quick-cmd[data-cmd='Transfer 500 rupees to Rahul']").forEach(btn => {
     btn.dataset.cmd = "Transfer money";
+});
+
+// ========== Zoom / Text Size ==========
+const ZOOM_STEPS  = [14, 16, 18, 20, 22, 24];          // html font-size in px
+const ZOOM_LABELS = ["Smallest", "Small", "Normal", "Large", "Larger", "Largest"];
+let currentZoomIdx = 2;                                  // default = 18 px (Normal)
+
+function applyZoom(idx) {
+    currentZoomIdx = Math.max(0, Math.min(ZOOM_STEPS.length - 1, idx));
+    document.documentElement.style.fontSize = ZOOM_STEPS[currentZoomIdx] + "px";
+    localStorage.setItem("saral-zoom", currentZoomIdx);
+    updateZoomUI();
+}
+
+function updateZoomUI() {
+    const isMin = currentZoomIdx <= 0;
+    const isMax = currentZoomIdx >= ZOOM_STEPS.length - 1;
+    const label = ZOOM_LABELS[currentZoomIdx];
+
+    document.querySelectorAll(".zoom-in-trigger").forEach(btn => {
+        btn.disabled = isMax;
+    });
+    document.querySelectorAll(".zoom-out-trigger").forEach(btn => {
+        btn.disabled = isMin;
+    });
+
+    const labelEl = document.getElementById("zoom-level-label");
+    if (labelEl) labelEl.textContent = label;
+}
+
+// Restore saved zoom on load
+(function () {
+    const saved = localStorage.getItem("saral-zoom");
+    applyZoom(saved !== null ? parseInt(saved, 10) : 2);
+})();
+
+// Wire all zoom buttons (home top bar + settings card share the same trigger classes)
+document.querySelectorAll(".zoom-in-trigger").forEach(btn => {
+    btn.addEventListener("click", () => {
+        vibrate(30);
+        applyZoom(currentZoomIdx + 1);
+    });
+});
+document.querySelectorAll(".zoom-out-trigger").forEach(btn => {
+    btn.addEventListener("click", () => {
+        vibrate(30);
+        applyZoom(currentZoomIdx - 1);
+    });
+});
+
+// ========== aria-pressed on language buttons ==========
+document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".lang-btn").forEach(b =>
+            b.setAttribute("aria-pressed", "false"));
+        btn.setAttribute("aria-pressed", "true");
+    });
 });
 
 // ========== Initialize ==========
