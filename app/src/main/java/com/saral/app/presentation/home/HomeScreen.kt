@@ -29,12 +29,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
@@ -98,11 +98,13 @@ fun HomeScreen(
             .fillMaxSize()
             .background(NavyDark)
     ) {
+        // ── Scrollable content (padded so it never hides under the fixed mic bar) ──
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(20.dp),
+                .padding(horizontal = 20.dp)
+                .padding(top = 20.dp, bottom = 160.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top bar
@@ -121,9 +123,7 @@ fun HomeScreen(
                     onClick = onSettingsClick,
                     modifier = Modifier
                         .size(52.dp)
-                        .semantics {
-                            contentDescription = "Open accessibility settings"
-                        }
+                        .semantics { contentDescription = "Open accessibility settings" }
                 ) {
                     Icon(
                         Icons.Filled.Settings,
@@ -135,35 +135,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Voice status banner
-            AnimatedVisibility(visible = uiState.isListening || uiState.isProcessing) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceCard),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Mic,
-                            contentDescription = null,
-                            tint = if (uiState.isListening) AccentYellow else AccentBlue,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = if (uiState.isListening) "Listening..." else "Processing...",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextWhite
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-            }
 
             // Response card
             AnimatedVisibility(
@@ -226,32 +197,6 @@ fun HomeScreen(
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            if (uiState.isProcessing) {
-                CircularProgressIndicator(
-                    color = AccentBlue,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(40.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
-            // Mic button
-            MicButton(
-                isListening = uiState.isListening,
-                onClick = onMicClick
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = if (uiState.isListening) "Listening... Tap to stop" else "Tap to speak",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = if (uiState.isListening) AccentYellow else TextLight
-            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -323,7 +268,6 @@ fun HomeScreen(
                     .padding(bottom = 12.dp)
             )
 
-            // Vertical quick-action buttons
             QuickActionButton(
                 icon = Icons.Filled.AccountBalance,
                 label = "Check My Balance",
@@ -331,9 +275,7 @@ fun HomeScreen(
                 color = AccentBlue,
                 onClick = { onQuickCommand("Check my balance") }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             QuickActionButton(
                 icon = Icons.Filled.SwapHoriz,
                 label = "Transfer Money",
@@ -341,9 +283,7 @@ fun HomeScreen(
                 color = AccentGreen,
                 onClick = { onQuickCommand("Transfer 500 rupees to Rahul") }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             QuickActionButton(
                 icon = Icons.Filled.Book,
                 label = "Request Cheque Book",
@@ -351,9 +291,7 @@ fun HomeScreen(
                 color = WarningOrange,
                 onClick = { onQuickCommand("Request cheque book") }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             QuickActionButton(
                 icon = Icons.Filled.Receipt,
                 label = "Recent Transactions",
@@ -361,9 +299,7 @@ fun HomeScreen(
                 color = AccentYellow,
                 onClick = { onQuickCommand("Show recent transactions") }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
             QuickActionButton(
                 icon = Icons.AutoMirrored.Filled.HelpOutline,
                 label = "Help",
@@ -371,8 +307,66 @@ fun HomeScreen(
                 color = TextLight,
                 onClick = { onQuickCommand("Help") }
             )
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
+        // ── Fixed bottom mic bar ─────────────────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(NavyDark)
+                .padding(horizontal = 20.dp)
+                .padding(top = 10.dp, bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Listening / processing status strip
+            AnimatedVisibility(visible = uiState.isListening || uiState.isProcessing) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Mic,
+                            contentDescription = null,
+                            tint = if (uiState.isListening) AccentYellow else AccentBlue,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (uiState.isListening) "Listening..." else "Processing...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextWhite
+                        )
+                        if (uiState.isProcessing) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            CircularProgressIndicator(
+                                color = AccentBlue,
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            MicButton(isListening = uiState.isListening, onClick = onMicClick)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = if (uiState.isListening) "Listening... Tap to stop" else "Tap to speak",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (uiState.isListening) AccentYellow else TextLight
+            )
         }
     }
 }
@@ -388,10 +382,7 @@ private fun QuickActionButton(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(
-                role = Role.Button,
-                onClickLabel = label
-            ) { onClick() }
+            .clickable(role = Role.Button, onClickLabel = label) { onClick() }
             .semantics {
                 contentDescription = "$label. $description"
                 role = Role.Button
@@ -421,35 +412,20 @@ private fun QuickActionButton(
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextWhite
-                )
-                Text(
-                    text = description,
-                    fontSize = 16.sp,
-                    color = TextLight
-                )
+                Text(text = label, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextWhite)
+                Text(text = description, fontSize = 16.sp, color = TextLight)
             }
         }
     }
 }
 
 @Composable
-private fun MicButton(
-    isListening: Boolean,
-    onClick: () -> Unit
-) {
+private fun MicButton(isListening: Boolean, onClick: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = if (isListening) 1.15f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600),
-            repeatMode = RepeatMode.Reverse
-        ),
+        animationSpec = infiniteRepeatable(animation = tween(600), repeatMode = RepeatMode.Reverse),
         label = "mic_scale"
     )
 

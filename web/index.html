@@ -59,96 +59,99 @@
     <!-- Home Screen -->
     <div id="home-screen" class="screen">
         <div class="home-container" id="main-content" role="main">
-            <!-- Top Bar -->
-            <div class="top-bar">
-                <h1 class="app-title">Saral</h1>
-                <div class="top-bar-right">
-                    <div class="zoom-controls" role="group" aria-label="Text size">
-                        <button class="zoom-btn zoom-btn-out zoom-out-trigger"
-                                aria-label="Decrease text size">A−</button>
-                        <button class="zoom-btn zoom-btn-in zoom-in-trigger"
-                                aria-label="Increase text size">A+</button>
+
+            <!-- SCROLLABLE CONTENT -->
+            <div class="home-scroll-content">
+                <!-- Top Bar -->
+                <div class="top-bar">
+                    <h1 class="app-title">Saral</h1>
+                    <div class="top-bar-right">
+                        <div class="zoom-controls" role="group" aria-label="Text size">
+                            <button class="zoom-btn zoom-btn-out zoom-out-trigger"
+                                    aria-label="Decrease text size">A−</button>
+                            <button class="zoom-btn zoom-btn-in zoom-in-trigger"
+                                    aria-label="Increase text size">A+</button>
+                        </div>
+                        <button id="settings-btn" class="icon-btn" aria-label="Open accessibility settings">
+                            <span class="material-icons-round" aria-hidden="true">settings</span>
+                        </button>
                     </div>
-                    <button id="settings-btn" class="icon-btn" aria-label="Open accessibility settings">
-                        <span class="material-icons-round" aria-hidden="true">settings</span>
-                    </button>
                 </div>
-            </div>
 
-            <!-- Voice Status Banner -->
-            <div id="voice-status" class="voice-status hidden" role="alert">
-                <span class="material-icons-round" id="voice-status-icon" aria-hidden="true">mic_off</span>
-                <span id="voice-status-text"></span>
-            </div>
-
-            <!-- Response Card -->
-            <div id="response-card" class="response-card hidden" role="status" aria-live="polite" aria-atomic="true">
-                <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
-                <p id="response-text"></p>
-            </div>
-
-            <!-- Recognized Text -->
-            <div id="recognized-card" class="recognized-card hidden" aria-live="polite">
-                <p id="recognized-text"></p>
-            </div>
-
-            <!-- Transaction List -->
-            <div id="transactions-card" class="transactions-card hidden">
-                <h3>Recent Transactions</h3>
-                <div id="transactions-list" role="list"></div>
-            </div>
-
-            <!-- Spacer -->
-            <div class="spacer" aria-hidden="true"></div>
-
-            <!-- Listening Indicator -->
-            <div id="listening-indicator" class="listening-indicator hidden" role="status" aria-live="polite">
-                <div class="listening-waves" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span><span></span>
+                <!-- Voice Status Banner -->
+                <div id="voice-status" class="voice-status hidden" role="alert">
+                    <span class="material-icons-round" id="voice-status-icon" aria-hidden="true">mic_off</span>
+                    <span id="voice-status-text"></span>
                 </div>
-                <p>Listening...</p>
-            </div>
 
-            <!-- Processing Indicator -->
-            <div id="processing-indicator" class="processing-indicator hidden" role="status" aria-label="Processing your command">
-                <div class="spinner" aria-hidden="true"></div>
-            </div>
-
-            <!-- Mic Button -->
-            <button id="mic-btn" class="mic-button" aria-label="Tap to speak a banking command">
-                <span class="material-icons-round" aria-hidden="true">mic</span>
-            </button>
-            <p class="mic-hint" aria-hidden="true">Tap to speak</p>
-
-            <!-- Text Input (fallback + always available) -->
-            <div class="text-input-area">
-                <div class="text-input-wrapper">
-                    <input type="text" id="text-input" class="text-input"
-                           placeholder="Type a command... e.g. check my balance"
-                           aria-label="Type a banking command and press Enter or tap Send">
-                    <button id="send-btn" class="send-btn" aria-label="Send command">
-                        <span class="material-icons-round" aria-hidden="true">send</span>
-                    </button>
+                <!-- Response Card -->
+                <div id="response-card" class="response-card hidden" role="status" aria-live="polite" aria-atomic="true">
+                    <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
+                    <p id="response-text"></p>
                 </div>
-            </div>
 
-            <!-- Quick Commands -->
-            <div class="quick-commands" role="group" aria-label="Quick commands">
-                <button class="quick-cmd" data-cmd="Check my balance">Check Balance</button>
-                <button class="quick-cmd" data-cmd="Transfer 500 rupees to Rahul">Transfer Money</button>
-                <button class="quick-cmd" data-cmd="Request cheque book">Cheque Book</button>
-                <button class="quick-cmd" data-cmd="Show recent transactions">Transactions</button>
-                <button class="quick-cmd" data-cmd="Help">Help</button>
-            </div>
-
-            <!-- Recent Commands -->
-            <div id="recent-commands" class="recent-commands hidden">
-                <div class="recent-header" aria-hidden="true">
-                    <span class="material-icons-round">history</span>
-                    <span>Recent</span>
+                <!-- Recognized Text -->
+                <div id="recognized-card" class="recognized-card hidden" aria-live="polite">
+                    <p id="recognized-text"></p>
                 </div>
-                <div id="recent-list" class="recent-list" aria-label="Recent commands"></div>
-            </div>
+
+                <!-- Transaction List -->
+                <div id="transactions-card" class="transactions-card hidden">
+                    <h3>Recent Transactions</h3>
+                    <div id="transactions-list" role="list"></div>
+                </div>
+
+                <!-- Text Input (always available) -->
+                <div class="text-input-area">
+                    <div class="text-input-wrapper">
+                        <input type="text" id="text-input" class="text-input"
+                               placeholder="Type a command... e.g. check my balance"
+                               aria-label="Type a banking command and press Enter or tap Send">
+                        <button id="send-btn" class="send-btn" aria-label="Send command">
+                            <span class="material-icons-round" aria-hidden="true">send</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Commands -->
+                <div class="quick-commands" role="group" aria-label="Quick commands">
+                    <button class="quick-cmd" data-cmd="Check my balance">Check Balance</button>
+                    <button class="quick-cmd" data-cmd="Transfer 500 rupees to Rahul">Transfer Money</button>
+                    <button class="quick-cmd" data-cmd="Request cheque book">Cheque Book</button>
+                    <button class="quick-cmd" data-cmd="Show recent transactions">Transactions</button>
+                    <button class="quick-cmd" data-cmd="Help">Help</button>
+                </div>
+
+                <!-- Recent Commands -->
+                <div id="recent-commands" class="recent-commands hidden">
+                    <div class="recent-header" aria-hidden="true">
+                        <span class="material-icons-round">history</span>
+                        <span>Recent</span>
+                    </div>
+                    <div id="recent-list" class="recent-list" aria-label="Recent commands"></div>
+                </div>
+            </div><!-- end .home-scroll-content -->
+
+            <!-- FIXED BOTTOM MIC BAR -->
+            <div class="mic-bar" aria-label="Voice input">
+                <!-- Listening Indicator -->
+                <div id="listening-indicator" class="listening-indicator hidden" role="status" aria-live="polite">
+                    <div class="listening-waves" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <p>Listening...</p>
+                </div>
+                <!-- Processing Indicator -->
+                <div id="processing-indicator" class="processing-indicator hidden" role="status" aria-label="Processing your command">
+                    <div class="spinner" aria-hidden="true"></div>
+                </div>
+                <!-- Mic Button -->
+                <button id="mic-btn" class="mic-button" aria-label="Tap to speak a banking command">
+                    <span class="material-icons-round" aria-hidden="true">mic</span>
+                </button>
+                <p class="mic-hint" aria-hidden="true">Tap to speak</p>
+            </div><!-- end .mic-bar -->
+
         </div>
     </div>
 
@@ -280,128 +283,129 @@
     <div id="transfer-screen" class="screen">
         <div class="home-container" role="main" aria-label="Money transfer">
 
-            <!-- Top bar -->
-            <div class="top-bar">
-                <button id="transfer-back-btn" class="icon-btn" aria-label="Cancel and go back to home">
-                    <span class="material-icons-round" aria-hidden="true">arrow_back</span>
-                </button>
-                <div style="display:flex;align-items:center;gap:8px">
-                    <span class="material-icons-round" style="color:var(--accent-blue,#42A5F5)"
-                          aria-hidden="true">swap_horiz</span>
-                    <h2 style="font-size:1.2rem;font-weight:700;margin:0">Transfer Money</h2>
-                </div>
-                <div style="width:40px" aria-hidden="true"></div>
-            </div>
-
-            <!-- AI Response -->
-            <div id="transfer-response-card" class="response-card hidden"
-                 role="status" aria-live="polite" aria-atomic="true">
-                <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
-                <p id="transfer-response-text"></p>
-            </div>
-
-            <!-- Beneficiary List (SelectingBeneficiary phase) -->
-            <div id="transfer-beneficiary-section" class="transactions-card hidden">
-                <h3>Your Beneficiaries</h3>
-                <div id="transfer-beneficiary-list" role="list"
-                     aria-label="Select a beneficiary to transfer money"></div>
-            </div>
-
-            <!-- Selected Beneficiary (EnterAmount phase) -->
-            <div id="transfer-selected-card" class="transactions-card hidden">
-                <h3>Sending To</h3>
-                <div id="transfer-selected-content"></div>
-            </div>
-
-            <!-- Confirm Transfer (Confirming phase) -->
-            <div id="transfer-confirm-card" class="transactions-card hidden">
-                <h3>Confirm Transfer</h3>
-                <div id="transfer-confirm-content"></div>
-                <div style="display:flex;gap:12px;margin-top:16px">
-                    <button id="transfer-confirm-no-btn" class="quick-cmd"
-                            style="flex:1;background:#B71C1C;color:#fff;border:none"
-                            aria-label="Cancel this transfer">
-                        ✕ No, Cancel
+            <!-- SCROLLABLE CONTENT -->
+            <div class="home-scroll-content">
+                <!-- Top bar -->
+                <div class="top-bar">
+                    <button id="transfer-back-btn" class="icon-btn" aria-label="Cancel and go back to home">
+                        <span class="material-icons-round" aria-hidden="true">arrow_back</span>
                     </button>
-                    <button id="transfer-confirm-yes-btn" class="quick-cmd"
-                            style="flex:1;background:#004D40;color:#fff;border:none"
-                            aria-label="Confirm and proceed with transfer">
-                        ✓ Yes, Proceed
-                    </button>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span class="material-icons-round" style="color:var(--accent-blue,#42A5F5)"
+                              aria-hidden="true">swap_horiz</span>
+                        <h2 style="font-size:1.2rem;font-weight:700;margin:0">Transfer Money</h2>
+                    </div>
+                    <div style="width:40px" aria-hidden="true"></div>
                 </div>
-            </div>
 
-            <!-- Biometric Auth (AwaitingBiometric phase) -->
-            <div id="transfer-biometric-card" class="transactions-card hidden" style="text-align:center">
-                <div class="fingerprint-icon pulse" style="margin:0 auto 16px" aria-hidden="true">
+                <!-- AI Response -->
+                <div id="transfer-response-card" class="response-card hidden"
+                     role="status" aria-live="polite" aria-atomic="true">
+                    <span class="material-icons-round response-icon" aria-hidden="true">volume_up</span>
+                    <p id="transfer-response-text"></p>
+                </div>
+
+                <!-- Beneficiary List -->
+                <div id="transfer-beneficiary-section" class="transactions-card hidden">
+                    <h3>Your Beneficiaries</h3>
+                    <div id="transfer-beneficiary-list" role="list"
+                         aria-label="Select a beneficiary to transfer money"></div>
+                </div>
+
+                <!-- Selected Beneficiary -->
+                <div id="transfer-selected-card" class="transactions-card hidden">
+                    <h3>Sending To</h3>
+                    <div id="transfer-selected-content"></div>
+                </div>
+
+                <!-- Confirm Transfer -->
+                <div id="transfer-confirm-card" class="transactions-card hidden">
+                    <h3>Confirm Transfer</h3>
+                    <div id="transfer-confirm-content"></div>
+                    <div style="display:flex;gap:12px;margin-top:16px">
+                        <button id="transfer-confirm-no-btn" class="quick-cmd"
+                                style="flex:1;background:#B71C1C;color:#fff;border:none"
+                                aria-label="Cancel this transfer">
+                            ✕ No, Cancel
+                        </button>
+                        <button id="transfer-confirm-yes-btn" class="quick-cmd"
+                                style="flex:1;background:#004D40;color:#fff;border:none"
+                                aria-label="Confirm and proceed with transfer">
+                            ✓ Yes, Proceed
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Biometric Auth — auto-triggered, no button needed -->
+                <div id="transfer-biometric-card" class="transactions-card hidden" style="text-align:center"
+                     role="status" aria-live="polite">
+                    <div class="fingerprint-icon pulse" style="margin:0 auto 16px" aria-hidden="true">
+                        <span class="material-icons-round"
+                              style="font-size:52px;color:var(--accent-blue,#42A5F5)">fingerprint</span>
+                    </div>
+                    <h3 style="margin-bottom:8px">Scanning Fingerprint…</h3>
+                    <p id="transfer-biometric-detail" class="auth-subtitle" style="margin-bottom:12px"
+                       aria-live="polite"></p>
+                    <p style="color:var(--t3,#7A9BB5);font-size:0.9rem">
+                        Please hold your finger on the sensor
+                    </p>
+                </div>
+
+                <!-- Transfer Complete -->
+                <div id="transfer-complete-card" class="transactions-card hidden" style="text-align:center"
+                     role="status" aria-live="polite">
                     <span class="material-icons-round"
-                          style="font-size:52px;color:var(--accent-blue,#42A5F5)">fingerprint</span>
-                </div>
-                <h3 style="margin-bottom:8px">Authenticate to Transfer</h3>
-                <p id="transfer-biometric-detail" class="auth-subtitle" style="margin-bottom:20px"
-                   aria-live="polite"></p>
-                <button id="transfer-biometric-btn" class="auth-button" style="width:100%"
-                        aria-label="Tap to authenticate with fingerprint and authorise transfer">
-                    <span class="material-icons-round" aria-hidden="true">lock_open</span>
-                    Tap to Authenticate (Demo)
-                </button>
-            </div>
-
-            <!-- Transfer Complete -->
-            <div id="transfer-complete-card" class="transactions-card hidden" style="text-align:center"
-                 role="status" aria-live="polite">
-                <span class="material-icons-round"
-                      style="font-size:52px;color:#00BFA5;display:block;margin-bottom:8px"
-                      aria-hidden="true">check_circle</span>
-                <h3 style="color:#00BFA5;margin-bottom:4px">Transfer Successful!</h3>
-                <div id="transfer-complete-content"></div>
-                <button id="transfer-done-btn" class="auth-button"
-                        style="margin-top:16px;width:100%" aria-label="Done, return to home screen">
-                    <span class="material-icons-round" aria-hidden="true">home</span>
-                    Done
-                </button>
-            </div>
-
-            <!-- Recognized Text -->
-            <div id="transfer-recognized-card" class="recognized-card hidden" aria-live="polite">
-                <p id="transfer-recognized-text"></p>
-            </div>
-
-            <div class="spacer" aria-hidden="true"></div>
-
-            <!-- Listening Indicator -->
-            <div id="transfer-listening-indicator" class="listening-indicator hidden"
-                 role="status" aria-live="polite">
-                <div class="listening-waves" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span><span></span>
-                </div>
-                <p>Listening...</p>
-            </div>
-
-            <!-- Processing -->
-            <div id="transfer-processing-indicator" class="processing-indicator hidden"
-                 role="status" aria-label="Processing transfer">
-                <div class="spinner" aria-hidden="true"></div>
-            </div>
-
-            <!-- Mic Button -->
-            <button id="transfer-mic-btn" class="mic-button"
-                    aria-label="Tap to speak — say a name, amount, yes or no">
-                <span class="material-icons-round" aria-hidden="true">mic</span>
-            </button>
-            <p class="mic-hint" aria-hidden="true">Tap to speak</p>
-
-            <!-- Text Input Fallback -->
-            <div class="text-input-area">
-                <div class="text-input-wrapper">
-                    <input type="text" id="transfer-text-input" class="text-input"
-                           placeholder="Or type here (name / amount / yes / no)..."
-                           aria-label="Type a beneficiary name, amount, yes or no, then press Enter">
-                    <button id="transfer-send-btn" class="send-btn" aria-label="Send typed response">
-                        <span class="material-icons-round" aria-hidden="true">send</span>
+                          style="font-size:52px;color:#00BFA5;display:block;margin-bottom:8px"
+                          aria-hidden="true">check_circle</span>
+                    <h3 style="color:#00BFA5;margin-bottom:4px">Transfer Successful!</h3>
+                    <div id="transfer-complete-content"></div>
+                    <button id="transfer-done-btn" class="auth-button"
+                            style="margin-top:16px;width:100%" aria-label="Done, return to home screen">
+                        <span class="material-icons-round" aria-hidden="true">home</span>
+                        Done
                     </button>
                 </div>
-            </div>
+
+                <!-- Recognized Text -->
+                <div id="transfer-recognized-card" class="recognized-card hidden" aria-live="polite">
+                    <p id="transfer-recognized-text"></p>
+                </div>
+
+                <!-- Text Input Fallback -->
+                <div class="text-input-area" id="transfer-text-input-area">
+                    <div class="text-input-wrapper">
+                        <input type="text" id="transfer-text-input" class="text-input"
+                               placeholder="Or type here (name / amount / yes / no)..."
+                               aria-label="Type a beneficiary name, amount, yes or no, then press Enter">
+                        <button id="transfer-send-btn" class="send-btn" aria-label="Send typed response">
+                            <span class="material-icons-round" aria-hidden="true">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div><!-- end .home-scroll-content -->
+
+            <!-- FIXED BOTTOM MIC BAR -->
+            <div class="mic-bar" id="transfer-mic-bar" aria-label="Voice input">
+                <!-- Listening Indicator -->
+                <div id="transfer-listening-indicator" class="listening-indicator hidden"
+                     role="status" aria-live="polite">
+                    <div class="listening-waves" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <p>Listening...</p>
+                </div>
+                <!-- Processing -->
+                <div id="transfer-processing-indicator" class="processing-indicator hidden"
+                     role="status" aria-label="Processing transfer">
+                    <div class="spinner" aria-hidden="true"></div>
+                </div>
+                <!-- Mic Button -->
+                <button id="transfer-mic-btn" class="mic-button"
+                        aria-label="Tap to speak — say a name, amount, yes or no">
+                    <span class="material-icons-round" aria-hidden="true">mic</span>
+                </button>
+                <p class="mic-hint" aria-hidden="true">Tap to speak</p>
+            </div><!-- end .mic-bar -->
 
         </div>
     </div>

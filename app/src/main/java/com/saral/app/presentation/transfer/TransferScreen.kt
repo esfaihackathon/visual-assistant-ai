@@ -57,6 +57,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -104,11 +105,15 @@ fun TransferScreen(
     }
 
     // Feature 1: voice "Done / Main Menu" navigation from Complete or Failed screen
-    // Callback wired once per screen entry; mirrors the speakCallback pattern.
     LaunchedEffect(viewModel) {
-        viewModel.setNavigateCallback {
-            viewModel.reset()
-            onBack()
+        viewModel.setNavigateCallback { viewModel.reset(); onBack() }
+    }
+
+    // Auto-trigger fingerprint when transfer is confirmed — no button tap required
+    LaunchedEffect(step) {
+        if (step is TransferStep.AwaitingBiometric) {
+            delay(500) // let the card animate in before system dialog appears
+            onRequestBiometric()
         }
     }
 
@@ -117,16 +122,21 @@ fun TransferScreen(
         onBack()
     }
 
+    // Mic is hidden only while fingerprint dialog is active (system UI takes focus)
+    val showMic = step !is TransferStep.AwaitingBiometric
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(NavyDark)
     ) {
+        // ── Scrollable content ───────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(top = 24.dp, bottom = if (showMic) 160.dp else 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top bar
@@ -134,12 +144,7 @@ fun TransferScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = {
-                        viewModel.reset()
-                        onBack()
-                    }
-                ) {
+                IconButton(onClick = { viewModel.reset(); onBack() }) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Go back",
@@ -148,12 +153,7 @@ fun TransferScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    Icons.Filled.SwapHoriz,
-                    contentDescription = null,
-                    tint = AccentBlue,
-                    modifier = Modifier.size(24.dp)
-                )
+                Icon(Icons.Filled.SwapHoriz, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Transfer Money",
@@ -166,11 +166,7 @@ fun TransferScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Assistant response card
-            AnimatedVisibility(
-                visible = assistantMessage.isNotEmpty(),
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            AnimatedVisibility(visible = assistantMessage.isNotEmpty(), enter = fadeIn(), exit = fadeOut()) {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -178,23 +174,10 @@ fun TransferScreen(
                     colors = CardDefaults.cardColors(containerColor = SurfaceCard),
                     shape = RoundedCornerShape(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = null,
-                            tint = AccentBlue,
-                            modifier = Modifier.size(24.dp)
-                        )
+                    Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.Top) {
+                        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = assistantMessage,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextWhite,
-                            lineHeight = 28.sp
-                        )
+                        Text(text = assistantMessage, style = MaterialTheme.typography.bodyLarge, color = TextWhite, lineHeight = 28.sp)
                     }
                 }
             }
@@ -210,7 +193,7 @@ fun TransferScreen(
                 when (currentStep) {
                     is TransferStep.SelectingBeneficiary -> BeneficiaryListContent(
                         beneficiaries = beneficiaries,
-                        onSelect      = { viewModel.onBeneficiarySelected(it) }
+                        onSelect = { viewModel.onBeneficiarySelected(it) }
                     )
                     is TransferStep.EnterAmount -> EnterAmountContent(currentStep.beneficiary)
                     is TransferStep.ConfirmTransfer -> ConfirmTransferContent(
@@ -221,30 +204,23 @@ fun TransferScreen(
                     )
                     is TransferStep.AwaitingBiometric -> AwaitingBiometricContent(
                         beneficiary = currentStep.beneficiary,
-                        amount = currentStep.amount,
-                        onAuthenticate = onRequestBiometric
+                        amount = currentStep.amount
                     )
                     is TransferStep.Complete -> TransferCompleteContent(
                         beneficiary = currentStep.beneficiary,
                         amount = currentStep.amount,
                         remainingBalance = currentStep.remainingBalance,
                         txnId = currentStep.txnId,
-                        onDone = {
-                            viewModel.reset()
-                            onBack()
-                        }
+                        onDone = { viewModel.reset(); onBack() }
                     )
                     is TransferStep.Failed -> TransferFailedContent(
                         onRetry = { viewModel.reset() },
-                        onCancel = {
-                            viewModel.reset()
-                            onBack()
-                        }
+                        onCancel = { viewModel.reset(); onBack() }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Recognized text
             AnimatedVisibility(visible = recognizedText.isNotEmpty()) {
@@ -255,53 +231,61 @@ fun TransferScreen(
                 ) {
                     Text(
                         text = "\"$recognizedText\"",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = AccentBlue,
                         textAlign = TextAlign.Center
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Loading indicator
-            if (isLoading) {
-                CircularProgressIndicator(
-                    color = AccentBlue,
-                    modifier = Modifier.size(32.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Hide mic only while fingerprint is pending; Complete/Failed keep mic so user
-            // can say "Done" or "Main Menu" to navigate home (Feature 1)
-            val isTerminal = step is TransferStep.AwaitingBiometric
-            if (!isTerminal) {
-                if (isListening) {
-                    Text(
-                        text = "Listening…",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = AccentBlue
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+        // ── Fixed bottom mic bar (hidden during fingerprint auth) ─────────────────
+        if (showMic) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(NavyDark)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 10.dp, bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Loading / listening status strip
+                AnimatedVisibility(visible = isLoading || isListening) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.Mic, contentDescription = null,
+                                tint = if (isListening) AccentYellow else AccentBlue,
+                                modifier = Modifier.size(22.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = if (isListening) "Listening…" else "Processing…",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextWhite
+                            )
+                            if (isLoading) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                CircularProgressIndicator(color = AccentBlue, strokeWidth = 3.dp, modifier = Modifier.size(22.dp))
+                            }
+                        }
+                    }
                 }
 
                 TransferMicButton(isListening = isListening, onClick = onMicClick)
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "Tap to speak",
+                    text = if (isListening) "Listening… Tap to stop" else "Tap to speak",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextLight
+                    color = if (isListening) AccentYellow else TextLight
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -772,11 +756,7 @@ private fun TransferFailedContent(onRetry: () -> Unit, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun AwaitingBiometricContent(
-    beneficiary: Beneficiary,
-    amount: Double,
-    onAuthenticate: () -> Unit
-) {
+private fun AwaitingBiometricContent(beneficiary: Beneficiary, amount: Double) {
     val amountFormatted = if (amount == amount.toLong().toDouble())
         String.format("%,d", amount.toLong()) else String.format("%,.2f", amount)
 
@@ -791,12 +771,8 @@ private fun AwaitingBiometricContent(
         ) {
             val infiniteTransition = rememberInfiniteTransition(label = "fingerprint_pulse")
             val pulseScale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 1.12f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(800),
-                    repeatMode = RepeatMode.Reverse
-                ),
+                initialValue = 1f, targetValue = 1.14f,
+                animationSpec = infiniteRepeatable(animation = tween(700), repeatMode = RepeatMode.Reverse),
                 label = "fingerprint_scale"
             )
             Box(
@@ -807,16 +783,12 @@ private fun AwaitingBiometricContent(
                     .background(AccentBlue.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Filled.Fingerprint,
-                    contentDescription = "Fingerprint",
-                    tint = AccentBlue,
-                    modifier = Modifier.size(48.dp)
-                )
+                Icon(Icons.Filled.Fingerprint, contentDescription = "Fingerprint scanner",
+                    tint = AccentBlue, modifier = Modifier.size(48.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Authenticate to Transfer",
+                text = "Scanning Fingerprint…",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = TextWhite
@@ -828,21 +800,15 @@ private fun AwaitingBiometricContent(
                 color = TextLight,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(20.dp))
-            Button(
-                onClick = onAuthenticate,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
-            ) {
-                Icon(
-                    Icons.Filled.Fingerprint,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Tap to Authenticate", color = Color.White, fontWeight = FontWeight.SemiBold)
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+            CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(28.dp), strokeWidth = 3.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Please authenticate using your fingerprint",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextLight,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saral — Accessible Banking Assistant</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:    #081320;
+    --blue:    #4D9EFF;
+    --teal:    #00BFA5;
+    --amber:   #FFC107;
+    --orange:  #FF6B35;
+    --white:   #FFFFFF;
+    --muted:   #B2CCE8;
+    --card:    #0E2035;
+    --btn:     #1556B0;
+  }
+
+  html, body { height: 100%; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--navy); color: var(--white); }
+
+  /* ── Slide deck ── */
+  .deck { width: 100%; }
+  .slide {
+    width: 100%; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 48px 60px;
+    border-bottom: 2px solid rgba(77,158,255,0.12);
+    page-break-after: always;
+  }
+  .slide-inner { max-width: 960px; width: 100%; }
+
+  /* ── Typography ── */
+  h1 { font-size: 3rem; font-weight: 900; line-height: 1.1; }
+  h2 { font-size: 2.1rem; font-weight: 800; margin-bottom: 28px; }
+  h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 10px; }
+  p  { font-size: 1.1rem; line-height: 1.7; color: var(--muted); }
+  .accent  { color: var(--blue); }
+  .amber   { color: var(--amber); }
+  .teal    { color: var(--teal); }
+  .orange  { color: var(--orange); }
+  .white   { color: var(--white); }
+
+  /* ── Slide 1: Cover ── */
+  .cover { background: radial-gradient(ellipse at 30% 40%, rgba(77,158,255,0.18) 0%, transparent 65%), var(--navy); text-align: center; }
+  .logo-ring {
+    width: 130px; height: 130px; border-radius: 50%;
+    background: rgba(77,158,255,0.12); border: 2px solid rgba(77,158,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 32px; font-size: 3.5rem;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  .tag { display: inline-block; background: rgba(77,158,255,0.15); border: 1px solid rgba(77,158,255,0.4);
+         color: var(--blue); border-radius: 24px; padding: 6px 18px; font-size: 0.9rem;
+         font-weight: 600; letter-spacing: 0.5px; margin-top: 12px; }
+  .subtitle { font-size: 1.35rem; color: var(--muted); margin-top: 14px; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 10px;
+  }
+
+  /* ── Cards ── */
+  .cards { display: grid; gap: 20px; margin-top: 24px; }
+  .cards-2 { grid-template-columns: 1fr 1fr; }
+  .cards-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cards-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .card {
+    background: var(--card); border: 1px solid rgba(77,158,255,0.15);
+    border-radius: 16px; padding: 24px;
+  }
+  .card-icon { font-size: 2rem; margin-bottom: 12px; }
+  .card h3 { color: var(--white); }
+  .card p  { font-size: 0.95rem; margin-top: 6px; }
+
+  /* ── Stat blocks ── */
+  .stats { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 28px; }
+  .stat {
+    flex: 1; min-width: 160px;
+    background: var(--card); border-radius: 16px; padding: 24px;
+    text-align: center; border: 1px solid rgba(77,158,255,0.15);
+  }
+  .stat-num { font-size: 2.4rem; font-weight: 900; }
+  .stat-label { font-size: 0.9rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── Flow diagram ── */
+  .flow { display: flex; align-items: center; gap: 0; margin-top: 28px; flex-wrap: wrap; }
+  .flow-step {
+    background: var(--card); border: 1px solid rgba(77,158,255,0.2);
+    border-radius: 12px; padding: 16px 20px; text-align: center; flex: 1; min-width: 120px;
+  }
+  .flow-step .icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .flow-step p { font-size: 0.85rem; color: var(--muted); }
+  .arrow { color: var(--blue); font-size: 1.6rem; padding: 0 8px; flex-shrink: 0; }
+
+  /* ── Feature list ── */
+  .feature-list { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .feature-row {
+    display: flex; align-items: flex-start; gap: 16px;
+    background: var(--card); border-radius: 12px; padding: 16px 20px;
+    border-left: 3px solid var(--blue);
+  }
+  .feature-row.teal-border { border-left-color: var(--teal); }
+  .feature-row.amber-border { border-left-color: var(--amber); }
+  .feature-row .fi { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+  .feature-row .ft h3 { font-size: 1rem; color: var(--white); margin-bottom: 3px; }
+  .feature-row .ft p  { font-size: 0.9rem; }
+
+  /* ── Code block ── */
+  .code-block {
+    background: #020C16; border: 1px solid rgba(77,158,255,0.2);
+    border-radius: 12px; padding: 20px 24px; margin-top: 20px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.85rem; line-height: 1.7; white-space: pre; overflow-x: auto;
+  }
+  .kw   { color: #79B8FF; }
+  .fn   { color: #00BFA5; }
+  .cm   { color: #586069; }
+  .str  { color: #FFC107; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.95rem; }
+  th { background: rgba(77,158,255,0.12); color: var(--blue); font-weight: 700;
+       padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(77,158,255,0.2); }
+  td { padding: 11px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--muted); }
+  td:first-child { color: var(--white); font-weight: 600; }
+
+  /* ── Quote ── */
+  .quote {
+    border-left: 4px solid var(--amber); padding: 16px 24px;
+    background: rgba(255,193,7,0.06); border-radius: 0 12px 12px 0;
+    font-size: 1.2rem; font-style: italic; color: var(--white);
+    margin-top: 24px;
+  }
+
+  /* ── Pill badges ── */
+  .pill { display: inline-block; border-radius: 20px; padding: 4px 14px;
+          font-size: 0.82rem; font-weight: 700; margin: 3px; }
+  .pill-blue   { background: rgba(77,158,255,0.15); color: var(--blue);   border: 1px solid rgba(77,158,255,0.3); }
+  .pill-teal   { background: rgba(0,191,165,0.12);  color: var(--teal);   border: 1px solid rgba(0,191,165,0.3); }
+  .pill-amber  { background: rgba(255,193,7,0.12);  color: var(--amber);  border: 1px solid rgba(255,193,7,0.3); }
+  .pill-orange { background: rgba(255,107,53,0.12); color: var(--orange); border: 1px solid rgba(255,107,53,0.3); }
+
+  /* ── Impact bar ── */
+  .impact-bar { margin-top: 12px; }
+  .bar-label  { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--muted); margin-bottom: 5px; }
+  .bar-track  { height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; }
+  .bar-fill   { height: 8px; border-radius: 4px; }
+
+  @media print {
+    .slide { min-height: auto; padding: 36px 48px; }
+    .logo-ring { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 1 — COVER
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide cover">
+    <div class="slide-inner" style="text-align:center">
+      <div class="logo-ring">🏦🎙️</div>
+      <div class="section-label">ESFAI Hackathon 2026</div>
+      <h1><span class="accent">Saral</span></h1>
+      <p class="subtitle">Voice-First Accessible Banking for Everyone</p>
+      <div style="margin-top:20px">
+        <span class="pill pill-blue">Android</span>
+        <span class="pill pill-teal">Web</span>
+        <span class="pill pill-amber">WCAG AAA</span>
+        <span class="pill pill-orange">Voice AI</span>
+        <span class="pill pill-blue">Biometric</span>
+      </div>
+      <div class="tag" style="margin-top:28px">Saral (सरल) — Simple in Hindi</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 2 — THE PROBLEM
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">The Problem</div>
+      <h2>Banking apps exclude <span class="orange">hundreds of millions</span> of users</h2>
+      <div class="cards cards-2">
+        <div class="card">
+          <div class="card-icon">👁️</div>
+          <h3>Visual Barriers</h3>
+          <p>80M+ visually impaired Indians cannot read standard app UI. Small fonts, low contrast, and colour-coded status are completely inaccessible.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🤲</div>
+          <h3>Motor Barriers</h3>
+          <p>300M+ senior citizens struggle with precise tapping on small buttons. Biometric authentication requires fine-motor button presses.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📖</div>
+          <h3>Literacy Barriers</h3>
+          <p>400M+ rural users with limited literacy cannot navigate menu-based interfaces or read account numbers and transaction details.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <h3>Colour-Blindness</h3>
+          <p>300M+ colour-blind users cannot distinguish red/green status indicators used across virtually every banking app.</p>
+        </div>
+      </div>
+      <div class="quote">"I have to call my son every time I want to check my balance." — Typical elderly banking customer</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 3 — WHO IS IMPACTED
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">People Impacted</div>
+      <h2>Scale of the <span class="accent">accessibility gap</span></h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num amber">80M+</div>
+          <div class="stat-label">Visually impaired in India</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num teal">300M+</div>
+          <div class="stat-label">Senior citizens (60+)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num orange">300M+</div>
+          <div class="stat-label">Colour-blind individuals</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num accent">400M+</div>
+          <div class="stat-label">Low-literacy users</div>
+        </div>
+      </div>
+      <table style="margin-top:32px">
+        <tr><th>User Group</th><th>Primary Barrier</th><th>How Saral Helps</th></tr>
+        <tr><td>Blind users</td><td>Cannot read any UI</td><td>100% voice-driven interaction</td></tr>
+        <tr><td>Low vision</td><td>Tiny text, low contrast</td><td>18sp+ fonts, 15.8:1 contrast ratio</td></tr>
+        <tr><td>Senior citizens</td><td>Fine motor, tech literacy</td><td>Large 88dp buttons, simple voice commands</td></tr>
+        <tr><td>Colour-blind</td><td>Red/green indicators</td><td>Teal/orange palette, shape-based status</td></tr>
+        <tr><td>Rural / low-literacy</td><td>Cannot navigate menus</td><td>Conversational voice interface + Hindi support</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 4 — OUR SOLUTION
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Our Solution</div>
+      <h2><span class="accent">Saral</span> — Voice-First Banking</h2>
+      <p>A banking assistant that works entirely by voice. The visual UI is a high-contrast fallback — not the primary interface.</p>
+      <div class="cards cards-3" style="margin-top:24px">
+        <div class="card">
+          <div class="card-icon">🎙️</div>
+          <h3 class="accent">Voice is Primary</h3>
+          <p>Every banking action — balance, transfer, cheque book, transactions — is completable by voice alone.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">👆</div>
+          <h3 class="teal">Touch is Secondary</h3>
+          <p>88dp minimum tap targets. Large-font cards. Beneficiaries shown as full-width tappable rows.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">♿</div>
+          <h3 class="amber">WCAG AAA</h3>
+          <p>15.8:1 contrast ratio. Colour-blind safe palette. Full ARIA labels. Screen reader compatible.</p>
+        </div>
+      </div>
+      <div class="feature-list" style="margin-top:20px">
+        <div class="feature-row">
+          <div class="fi">🔒</div>
+          <div class="ft">
+            <h3>Auto Fingerprint Auth</h3>
+            <p>When a transfer is confirmed, fingerprint scanner activates automatically — no button tap required.</p>
+          </div>
+        </div>
+        <div class="feature-row teal-border">
+          <div class="fi">📍</div>
+          <div class="ft">
+            <h3>Fixed Mic Button</h3>
+            <p>The microphone button is anchored at the bottom of every screen and never scrolls away — always within reach.</p>
+          </div>
+        </div>
+        <div class="feature-row amber-border">
+          <div class="fi">💬</div>
+          <div class="ft">
+            <h3>Conversational Follow-ups</h3>
+            <p>After every action the app asks what you'd like to do next — no need to remember commands.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 5 — USER FLOW
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">User Experience</div>
+      <h2>Complete a transfer <span class="teal">entirely by voice</span></h2>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="icon">🏠</div>
+          <h3>Home</h3>
+          <p>Tap mic or say a command</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">🗣️</div>
+          <h3>Voice</h3>
+          <p>"Transfer 500 to Rahul"</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">👥</div>
+          <h3>Beneficiary</h3>
+          <p>Tap or say name</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">💰</div>
+          <h3>Amount</h3>
+          <p>"500 rupees"</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">✅</div>
+          <h3>Confirm</h3>
+          <p>"Yes"</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">👆</div>
+          <h3>Biometric</h3>
+          <p>Auto-scans fingerprint</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-step">
+          <div class="icon">🎉</div>
+          <h3>Done</h3>
+          <p>Balance spoken aloud</p>
+        </div>
+      </div>
+      <p style="margin-top:28px;font-size:1rem;">Every step is spoken by the assistant. At no point does the user need to read the screen or tap a small button. The fingerprint scanner activates <strong style="color:var(--teal)">automatically</strong> — no need to find and press an "Authenticate" button.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 6 — FEATURES DEEP DIVE
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Features</div>
+      <h2>Every interaction <span class="accent">voice-first</span></h2>
+      <div class="cards cards-2">
+        <div class="card">
+          <div class="card-icon">💳</div>
+          <h3>Check Balance</h3>
+          <p>"Check my balance" → <em style="color:var(--teal)">"Your SBI savings account ending 7845 has ₹25,000 available. Say main menu to go home..."</em></p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <h3>Transactions</h3>
+          <p>"Last 5 transactions" → reads each one → <em style="color:var(--teal)">"Would you like to hear more, or say main menu?"</em></p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📘</div>
+          <h3>Cheque Book</h3>
+          <p>"Request cheque book" → confirms delivery date → <em style="color:var(--teal)">"Say main menu to go home or tell me what else..."</em></p>
+        </div>
+        <div class="card">
+          <div class="card-icon">⏱️</div>
+          <h3>Session Timeout</h3>
+          <p>3-minute idle timer with spoken 30-second warning. Automatically returns to auth screen. No data left exposed.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌐</div>
+          <h3>Hindi + English</h3>
+          <p>Full bilingual support. Switch language in settings. Voice recognition and TTS both adapt.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <h3>Transaction Search</h3>
+          <p>"Is my salary credited?" → searches and responds: <em style="color:var(--teal)">"Yes, ₹45,000 credited on 25 May."</em></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 7 — ACCESSIBILITY DESIGN
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Design System</div>
+      <h2>WCAG <span class="amber">AAA</span> accessibility</h2>
+      <div class="cards cards-2">
+        <div>
+          <table>
+            <tr><th>Requirement</th><th>Our Implementation</th></tr>
+            <tr><td>Contrast ratio</td><td class="teal">15.8 : 1 (AAA min 7:1)</td></tr>
+            <tr><td>Minimum font size</td><td class="teal">18sp / 18px base</td></tr>
+            <tr><td>Minimum tap target</td><td class="teal">88dp (2× Android spec)</td></tr>
+            <tr><td>Colour-blind safe</td><td class="teal">Teal + orange (no red/green)</td></tr>
+            <tr><td>Screen reader</td><td class="teal">Full ARIA + contentDescription</td></tr>
+            <tr><td>Zoom</td><td class="teal">A− / A+ controls always visible</td></tr>
+            <tr><td>User scaling</td><td class="teal">5 font-scale steps in Settings</td></tr>
+            <tr><td>Mic button</td><td class="teal">Fixed at screen bottom (never scrolls)</td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="background:var(--card);border-radius:16px;padding:24px;height:100%">
+            <h3 style="margin-bottom:16px">Colour Palette</h3>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#081320;border:1px solid rgba(255,255,255,0.2)"></div>
+                <div><div style="font-weight:600">#081320 — Background</div><div style="font-size:0.82rem;color:var(--muted)">Navy Dark</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#4D9EFF"></div>
+                <div><div style="font-weight:600">#4D9EFF — Primary</div><div style="font-size:0.82rem;color:var(--muted)">Accessible blue</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#00BFA5"></div>
+                <div><div style="font-weight:600">#00BFA5 — Success</div><div style="font-size:0.82rem;color:var(--muted)">Teal (deuteranopia-safe)</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#FF6B35"></div>
+                <div><div style="font-weight:600">#FF6B35 — Error</div><div style="font-size:0.82rem;color:var(--muted)">Orange (protanopia-safe)</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#FFC107"></div>
+                <div><div style="font-weight:600">#FFC107 — Accent</div><div style="font-size:0.82rem;color:var(--muted)">Amber (10.9:1 on dark)</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 8 — TECHNICAL ARCHITECTURE
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Technical Architecture</div>
+      <h2>How we <span class="teal">built it</span></h2>
+      <div class="cards cards-2">
+        <div class="card">
+          <h3 class="accent" style="margin-bottom:14px">Android App</h3>
+          <div class="code-block"><span class="kw">Kotlin</span> + <span class="kw">Jetpack Compose</span>
+├── <span class="fn">MVVM</span> + <span class="fn">Hilt</span> DI
+├── <span class="fn">StateFlow</span> / <span class="fn">SharedFlow</span>
+├── <span class="fn">BiometricPrompt</span> (auto-trigger)
+├── <span class="fn">SpeechRecognizer</span> API
+├── <span class="fn">TextToSpeech</span> API
+└── <span class="fn">Compose</span> fixed bottom mic bar
+    <span class="cm">// LaunchedEffect(step) fires biometric</span>
+    <span class="cm">// when step == AwaitingBiometric</span></div>
+        </div>
+        <div class="card">
+          <h3 class="teal" style="margin-bottom:14px">Web App</h3>
+          <div class="code-block"><span class="kw">HTML</span> + <span class="kw">CSS</span> + <span class="kw">Vanilla JS</span>
+├── Web Speech API (voice in/out)
+├── State machine
+│   currentTransferPhase
+│   awaitingSimpleFollowUp
+│   awaitingPostTransactionChoice
+├── CSS flex layout
+│   home-scroll-content (flex:1)
+│   mic-bar (flex-shrink:0) <span class="cm">← fixed</span>
+└── Auto biometric
+    <span class="cm">// setTimeout(executeWebTransfer, 2200)</span>
+    <span class="cm">// after entering biometric phase</span></div>
+        </div>
+      </div>
+      <div class="cards cards-3" style="margin-top:20px">
+        <div class="card" style="text-align:center">
+          <div style="font-size:2rem;margin-bottom:8px">🧪</div>
+          <h3><span class="accent">439</span> Unit Tests</h3>
+          <p>0 failures across all test suites</p>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:2rem;margin-bottom:8px">📦</div>
+          <h3><span class="teal">v8.0</span> APK</h3>
+          <p>17MB debug APK — fully functional offline</p>
+        </div>
+        <div class="card" style="text-align:center">
+          <div style="font-size:2rem;margin-bottom:8px">🔐</div>
+          <h3><span class="amber">Biometric</span></h3>
+          <p>Auto-triggered — no button tap needed for auth</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 9 — VOICE INTERACTION MODEL
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Voice AI</div>
+      <h2>Multi-turn <span class="accent">conversational dialogue</span></h2>
+      <p>Saral uses a flag-based state machine to maintain conversational context across turns. Each action naturally leads into the next question.</p>
+      <div class="cards cards-2" style="margin-top:24px">
+        <div class="card">
+          <h3 class="accent">Post-Action Follow-ups</h3>
+          <table style="margin-top:12px;font-size:0.88rem">
+            <tr><th>After</th><th>Follow-up prompt</th></tr>
+            <tr><td>Balance</td><td>"Say main menu or tell me what you'd like to do next"</td></tr>
+            <tr><td>Cheque book</td><td>"Say main menu or tell me what you'd like next"</td></tr>
+            <tr><td>Transactions</td><td>"Hear more, or say main menu to go home"</td></tr>
+            <tr><td>Transfer done</td><td>"Say Done or Main Menu to go home"</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3 class="teal">Intent Detection</h3>
+          <div class="code-block" style="margin-top:12px;font-size:0.8rem"><span class="cm">// Supports natural variations:</span>
+<span class="str">"check my balance"</span>
+<span class="str">"kitna paisa hai"</span>  <span class="cm">← Hindi</span>
+<span class="str">"what do I have in my account"</span>
+<span class="str">"show available balance"</span>
+
+<span class="cm">// Transfer flow listens for:</span>
+<span class="str">"Rahul"</span> | <span class="str">"Priya"</span> | <span class="str">"Amit"</span>
+<span class="str">"500 rupees"</span> | <span class="str">"five hundred"</span>
+<span class="str">"yes"</span> | <span class="str">"haan"</span> | <span class="str">"confirm"</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 10 — VERSION HISTORY
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Release History</div>
+      <h2>Built <span class="amber">iteratively</span> — feature by feature</h2>
+      <table>
+        <tr><th>Version</th><th>Key Additions</th><th>Tests</th></tr>
+        <tr><td>v1.0</td><td>Initial voice banking — balance, transfer, cheque book, transactions</td><td>—</td></tr>
+        <tr><td>v3.0</td><td>Navigation improvements, SaralNavGraph wiring</td><td>—</td></tr>
+        <tr><td>v5.0</td><td>Biometric authentication in transfer flow (button-triggered)</td><td>—</td></tr>
+        <tr><td>v6.0</td><td>WCAG AAA redesign · session timeout · beneficiary tap · voice post-transfer · transaction follow-up · new logo</td><td>418</td></tr>
+        <tr><td>v7.0</td><td>Balance + cheque-book post-action follow-up prompts</td><td>433</td></tr>
+        <tr><td class="teal">v8.0</td><td class="teal">Fixed mic bar (all screens) · auto-trigger fingerprint · 6 new tests</td><td class="teal">439</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 11 — IMPACT
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide">
+    <div class="slide-inner">
+      <div class="section-label">Impact</div>
+      <h2>Restoring <span class="teal">financial independence</span></h2>
+      <div class="cards cards-2" style="margin-top:20px">
+        <div>
+          <div class="impact-bar" style="margin-bottom:18px">
+            <div class="bar-label"><span>Blind users can bank independently</span><span class="accent">100%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--blue)"></div></div>
+          </div>
+          <div class="impact-bar" style="margin-bottom:18px">
+            <div class="bar-label"><span>Actions completable by voice</span><span class="teal">100%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--teal)"></div></div>
+          </div>
+          <div class="impact-bar" style="margin-bottom:18px">
+            <div class="bar-label"><span>WCAG AAA contrast compliance</span><span class="amber">100%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--amber)"></div></div>
+          </div>
+          <div class="impact-bar" style="margin-bottom:18px">
+            <div class="bar-label"><span>Screens with fixed mic button</span><span class="orange">100%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--orange)"></div></div>
+          </div>
+          <div class="impact-bar">
+            <div class="bar-label"><span>Reduction in auth friction</span><span class="accent">~80%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:80%;background:var(--blue)"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="height:100%;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:3rem;margin-bottom:16px;text-align:center">🌍</div>
+            <div class="stats" style="flex-direction:column;gap:16px">
+              <div class="stat">
+                <div class="stat-num amber">80M+</div>
+                <div class="stat-label">Visually impaired users who can now bank independently</div>
+              </div>
+              <div class="stat">
+                <div class="stat-num teal">300M+</div>
+                <div class="stat-label">Senior citizens with accessible banking for the first time</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SLIDE 12 — CLOSING
+  ══════════════════════════════════════════════════════ -->
+  <div class="slide cover">
+    <div class="slide-inner" style="text-align:center">
+      <div class="logo-ring">🏦🎙️</div>
+      <h1><span class="accent">Saral</span></h1>
+      <p class="subtitle">Banking that speaks your language.</p>
+      <div style="margin-top:36px;display:flex;justify-content:center;gap:32px;flex-wrap:wrap">
+        <div class="stat" style="min-width:130px">
+          <div class="stat-num accent">439</div>
+          <div class="stat-label">Tests Passing</div>
+        </div>
+        <div class="stat" style="min-width:130px">
+          <div class="stat-num teal">5</div>
+          <div class="stat-label">Screens — 100% Voice</div>
+        </div>
+        <div class="stat" style="min-width:130px">
+          <div class="stat-num amber">AAA</div>
+          <div class="stat-label">WCAG Compliance</div>
+        </div>
+        <div class="stat" style="min-width:130px">
+          <div class="stat-num orange">v8.0</div>
+          <div class="stat-label">Current Release</div>
+        </div>
+      </div>
+      <div class="quote" style="max-width:640px;margin:36px auto 0;text-align:left">
+        "Every person deserves the dignity of managing their own money — regardless of sight, age, or literacy."
+      </div>
+      <div style="margin-top:32px">
+        <span class="pill pill-blue">Android APK</span>
+        <span class="pill pill-teal">Web App</span>
+        <span class="pill pill-amber">Open Source</span>
+        <span class="pill pill-orange">ESFAI 2026</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

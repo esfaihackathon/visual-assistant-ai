@@ -733,7 +733,20 @@ function showTransferBiometric() {
     document.getElementById("transfer-biometric-detail").textContent =
         `₹${amtDisplay} → ${b.name} (${b.bank})`;
     document.getElementById("transfer-biometric-card").classList.remove("hidden");
-    transferRespond("Please authenticate with your fingerprint to authorize this transfer.");
+
+    // Hide the mic bar during biometric scan — system dialog is handling input
+    const micBar = document.getElementById("transfer-mic-bar");
+    if (micBar) micBar.classList.add("hidden");
+
+    transferRespond("Fingerprint authentication started. Please hold your finger on the sensor.");
+
+    // Auto-complete after animation delay (simulates the fingerprint scan)
+    setTimeout(() => {
+        vibrate(100);
+        document.getElementById("transfer-biometric-card").classList.add("hidden");
+        if (micBar) micBar.classList.remove("hidden");
+        speak("Biometric scan successful.", () => executeWebTransfer());
+    }, 2200);
 }
 
 function executeWebTransfer() {
@@ -1202,11 +1215,7 @@ document.getElementById("transfer-send-btn").addEventListener("click", () => {
     if (text) { inp.value = ""; handleTransferVoiceInput(text); }
 });
 
-document.getElementById("transfer-biometric-btn").addEventListener("click", () => {
-    vibrate(100);
-    document.getElementById("transfer-biometric-card").classList.add("hidden");
-    speak("Biometric scan successful.", () => executeWebTransfer());
-});
+// transfer-biometric-btn removed — biometric is now auto-triggered in showTransferBiometric()
 
 document.getElementById("transfer-confirm-yes-btn").addEventListener("click", () => {
     vibrate(50);

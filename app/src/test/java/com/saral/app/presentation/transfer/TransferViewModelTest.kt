@@ -981,6 +981,114 @@ class TransferViewModelTest {
     }
 
     // ══════════════════════════════════════════
+    // Auto-biometric trigger (v8.0)
+    // The UI layer calls onRequestBiometric() via LaunchedEffect when step
+    // reaches AwaitingBiometric. These VM-level tests verify the step is
+    // correct so the LaunchedEffect fires, and that biometric success/failure
+    // transitions work correctly regardless of the trigger mechanism.
+    // ══════════════════════════════════════════
+
+    @Test
+    fun awaitingBiometric_stepIsCorrectForAutoTrigger() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+
+        // Step must be AwaitingBiometric so the LaunchedEffect in the UI auto-fires
+        assertTrue(
+            "Step must be AwaitingBiometric to trigger auto-biometric LaunchedEffect",
+            vm.step.value is TransferStep.AwaitingBiometric
+        )
+    }
+
+    @Test
+    fun awaitingBiometric_hasCorrectBeneficiaryAndAmount_forAutoTrigger() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Priya"); advanceUntilIdle()
+        vm.onVoiceInput("1500"); advanceUntilIdle()
+        vm.onVoiceInput("confirm"); advanceUntilIdle()
+
+        val step = vm.step.value as TransferStep.AwaitingBiometric
+        assertEquals("Priya Gupta", step.beneficiary.name)
+        assertEquals(1500.0, step.amount, 0.001)
+    }
+
+    @Test
+    fun autoBiometric_success_completesImmediately() = runTest {
+        // Simulates what happens after auto-trigger fires and biometric succeeds
+        val (vm, spoken, _) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        assertTrue(vm.step.value is TransferStep.AwaitingBiometric)
+
+        vm.onBiometricSuccess()  // called by MainActivity after auto-trigger
+        advanceUntilIdle()
+
+        assertTrue(vm.step.value is TransferStep.Complete)
+        assertTrue(spoken.any { it.contains("successful", ignoreCase = true) })
+    }
+
+    @Test
+    fun autoBiometric_failure_remainsAtAwaitingBiometric_andSpeaksError() = runTest {
+        // onBiometricFailed() keeps step at AwaitingBiometric so the user can
+        // try the fingerprint again (auto-trigger can fire a second time from UI)
+        val (vm, spoken, _) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+
+        vm.onBiometricFailed()
+        advanceUntilIdle()
+
+        assertTrue(vm.step.value is TransferStep.AwaitingBiometric)
+        assertTrue(spoken.any { it.contains("fail", ignoreCase = true) || it.contains("try again", ignoreCase = true) })
+    }
+
+    @Test
+    fun autoBiometric_resetAfterFailure_returnsToSelectingBeneficiary() = runTest {
+        val (vm, _, _) = createVm()
+        advanceUntilIdle()
+        vm.onVoiceInput("Rahul"); advanceUntilIdle()
+        vm.onVoiceInput("500");   advanceUntilIdle()
+        vm.onVoiceInput("yes");   advanceUntilIdle()
+        vm.onBiometricFailed(); advanceUntilIdle()
+        // Step is still AwaitingBiometric; reset clears it
+        assertTrue(vm.step.value is TransferStep.AwaitingBiometric)
+
+        vm.reset()
+        advanceUntilIdle()
+
+        assertTrue(vm.step.value is TransferStep.SelectingBeneficiary)
+    }
+
+    @Test
+    fun autoBiometric_tapSelectBeneficiary_thenAutoTriggerFlow() = runTest {
+        // Full flow: tap select → voice amount → confirm → auto biometric → complete
+        val (vm, spoken, _) = createVm()
+        advanceUntilIdle()
+
+        // Use tap selection (Feature 3)
+        val beneficiary = vm.beneficiaries.value.first { it.name == "Rahul Sharma" }
+        vm.onBeneficiarySelected(beneficiary); advanceUntilIdle()
+        vm.onVoiceInput("1000"); advanceUntilIdle()
+        vm.onVoiceInput("yes");  advanceUntilIdle()
+
+        // At this point UI would auto-trigger biometric
+        assertTrue(vm.step.value is TransferStep.AwaitingBiometric)
+
+        vm.onBiometricSuccess(); advanceUntilIdle()
+
+        assertTrue(vm.step.value is TransferStep.Complete)
+        assertTrue(spoken.any { it.contains("1,000") || it.contains("1000") })
+    }
+
+    // ══════════════════════════════════════════
     // Feature 1: Voice navigation after transfer
     // Uses the synchronous navigateCallback pattern (same as speakCallback) —
     // no flow / channel timing issues in tests.
