@@ -328,7 +328,200 @@ tx(sl, "Sources: [9] W3C WCAG 2.1  [10] WebAIM Contrast Checker  [11] Material D
    size=8.5, italic=True, color=MUTED, align=PP_ALIGN.CENTER)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SLIDE 5 — REFERENCES (clean, single slide)
+# SLIDE 5 — PROMPT ENGINEERING
+# ─────────────────────────────────────────────────────────────────────────────
+sl = prs.slides.add_slide(BLANK)
+bg(sl)
+tx(sl, "PROMPT ENGINEERING", Inches(0.55), Inches(0.28), Inches(10), Inches(0.38),
+   size=10.5, bold=True, color=AMBER)
+tx(sl, "How natural language prompts became shipped features",
+   Inches(0.55), Inches(0.65), Inches(12.3), Inches(0.85),
+   size=33, bold=True, color=WHITE)
+divider(sl, Inches(1.52))
+
+# Left panel — example prompt (transaction feature)
+lx = Inches(0.38)
+rect(sl, lx, Inches(1.72), Inches(6.1), Inches(5.5), fill=NAVY_CARD)
+rect(sl, lx, Inches(1.72), Inches(6.1), Inches(0.07), fill=AMBER)
+rect(sl, lx, Inches(1.72), Inches(0.07), Inches(5.5), fill=AMBER)
+
+tx(sl, "📋  Example Prompt  →  Transaction Voice Feature",
+   lx+Inches(0.16), Inches(1.82), Inches(5.8), Inches(0.38),
+   size=12, bold=True, color=AMBER)
+
+prompt_lines = [
+    ('Current State:', True,  WHITE),
+    ('App only speaks the last transaction.', False, MUTED),
+    ('', False, MUTED),
+    ('New Features Required:', True,  WHITE),
+    ('① User says "transaction" → app asks:', False, MUTED),
+    ('   "Last 1, last 5, or last 10 transactions?"', False, BLUE),
+    ('② App reads out N transactions by voice', False, MUTED),
+    ('   (date · description · amount)', False, MUTED),
+    ('', False, MUTED),
+    ('③ Query mode — user asks:', True, WHITE),
+    ('   "Is my salary credited this month?"', False, BLUE),
+    ('   "Any electricity bill transaction?"', False, BLUE),
+    ('④ App searches data → responds by voice:', False, MUTED),
+    ('   "Yes, ₹45,000 credited on 25 May."', False, TEAL),
+    ('   "No matching transaction found."', False, ORANGE),
+]
+
+tb = sl.shapes.add_textbox(lx+Inches(0.18), Inches(2.28), Inches(5.74), Inches(4.8))
+tb.word_wrap = True
+tf = tb.text_frame; tf.word_wrap = True
+for i, (line, bold, clr) in enumerate(prompt_lines):
+    p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+    r = p.add_run(); r.text = line
+    r.font.size = Pt(11); r.font.bold = bold
+    r.font.color.rgb = clr; r.font.name = "Calibri"
+    from pptx.util import Pt as _Pt
+    p.space_after = _Pt(1)
+
+# Right panel — prompt → feature pipeline
+rx2 = Inches(6.7)
+tx(sl, "Prompt → Feature Pipeline",
+   rx2, Inches(1.72), Inches(6.3), Inches(0.38),
+   size=13, bold=True, color=WHITE)
+
+steps_p = [
+    ("1", "Write Prompt",
+     "Plain English spec describing current state, desired behaviour, and example interactions.",
+     BLUE),
+    ("2", "AI Parses Intent",
+     "Intent parser (VoiceIntentParser.kt / parseIntent() in JS) maps voice text to structured intent type.",
+     TEAL),
+    ("3", "Feature Implemented",
+     "ViewModel handles intent: flag-based state machine, follow-up prompts, TTS response.",
+     AMBER),
+    ("4", "Tests Written",
+     "Unit tests for each new intent path, follow-up choice, and edge case. 439 tests, 0 failures.",
+     ORANGE),
+    ("5", "APK / Web Shipped",
+     "Both Android APK and Web built and released. Same feature parity across platforms.",
+     TEAL),
+]
+for i, (num, title, body, clr) in enumerate(steps_p):
+    sy = Inches(2.22) + Inches(1.04)*i
+    rect(sl, rx2, sy, Inches(6.3), Inches(0.94), fill=NAVY_CARD)
+    rect(sl, rx2, sy, Inches(0.07), Inches(0.94), fill=clr)
+    rect(sl, rx2+Inches(0.18), sy+Inches(0.14), Inches(0.36), Inches(0.36), fill=clr)
+    tx(sl, num, rx2+Inches(0.18), sy+Inches(0.13), Inches(0.36), Inches(0.36),
+       size=13, bold=True, color=DARK, align=PP_ALIGN.CENTER)
+    tx(sl, title, rx2+Inches(0.68), sy+Inches(0.1), Inches(5.5), Inches(0.34),
+       size=12.5, bold=True, color=WHITE)
+    tx(sl, body, rx2+Inches(0.68), sy+Inches(0.46), Inches(5.5), Inches(0.44),
+       size=10.5, color=MUTED, wrap=True)
+
+# Other prompts used — bottom strip
+rect(sl, Inches(0.38), Inches(7.12), Inches(12.6), Inches(0.3), fill=DARK)
+other_prompts = [
+    '"Mic button is moving — fix at bottom"',
+    '"Auto-trigger fingerprint, no button"',
+    '"After balance, ask if back to menu"',
+    '"Session timeout 3 min"',
+    '"Beneficiary list — tap to select"',
+]
+tx(sl, "Other prompts:  " + "  ·  ".join(other_prompts),
+   Inches(0.5), Inches(7.14), Inches(12.3), Inches(0.26),
+   size=9, color=MUTED, italic=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SLIDE 6 — CODEBASE & CONTRIBUTORS
+# ─────────────────────────────────────────────────────────────────────────────
+sl = prs.slides.add_slide(BLANK)
+bg(sl)
+tx(sl, "CODEBASE  &  CONTRIBUTORS", Inches(0.55), Inches(0.28), Inches(10), Inches(0.38),
+   size=10.5, bold=True, color=AMBER)
+tx(sl, "Who built what — commits, files, and ownership",
+   Inches(0.55), Inches(0.65), Inches(12.3), Inches(0.85),
+   size=33, bold=True, color=WHITE)
+divider(sl, Inches(1.52))
+
+# Top — 4 repo stats
+repo_kpis = [
+    ("35",   "Kotlin source files\n(Android)",      BLUE),
+    ("16",   "Test files\n439 tests, 0 failures",   TEAL),
+    ("43",   "Total files changed\nacross all PRs",  AMBER),
+    ("7,813","Lines added\n1,220 lines removed",    ORANGE),
+]
+rw = Inches(3.1)
+for i, (n, l, c) in enumerate(repo_kpis):
+    kpi(sl, Inches(0.38)+rw*i, Inches(1.72), rw-Inches(0.08), Inches(1.3), n, l, c)
+
+# Left — contributor table
+lx2 = Inches(0.38)
+tx(sl, "Contributors & Commit Ownership",
+   lx2, Inches(3.18), Inches(6.5), Inches(0.38),
+   size=13, bold=True, color=WHITE)
+
+contribs = [
+    ("Aman Deep Srivastava", "AmanDeepSrivastava19", "9",
+     "Accessibility v6–v8, biometric, session timeout,\nvoice follow-ups, mic bar fix, all PPT & docs",
+     BLUE),
+    ("Arundeep Kamboj", "ArundeepKamboj", "14",
+     "Core architecture, HomeScreen redesign, colour palette,\nunit tests, navigation wiring, v3.0 release",
+     TEAL),
+    ("Jayesh Sharma", "SHARMAJAYESH / jayesh sharma", "7",
+     "First prototype + APK, README, initial prompt\ndocument, first feature demo",
+     AMBER),
+    ("Hardeep (hkhardeep9)", "hkhardeep9", "2",
+     "OTP removal, early APK push",
+     ORANGE),
+]
+for i, (name, handle, commits, role, clr) in enumerate(contribs):
+    cy2 = Inches(3.65) + Inches(0.88)*i
+    rect(sl, lx2, cy2, Inches(6.55), Inches(0.8), fill=NAVY_CARD)
+    rect(sl, lx2, cy2, Inches(0.07), Inches(0.8), fill=clr)
+    # commit badge
+    rect(sl, lx2+Inches(0.18), cy2+Inches(0.2), Inches(0.52), Inches(0.38), fill=clr)
+    tx(sl, commits, lx2+Inches(0.18), cy2+Inches(0.19), Inches(0.52), Inches(0.38),
+       size=14, bold=True, color=DARK, align=PP_ALIGN.CENTER)
+    tx(sl, name,   lx2+Inches(0.82), cy2+Inches(0.06), Inches(5.6), Inches(0.3),
+       size=12, bold=True, color=WHITE)
+    tx(sl, f"@{handle}", lx2+Inches(0.82), cy2+Inches(0.35), Inches(3.0), Inches(0.22),
+       size=9.5, color=BLUE, italic=True)
+    tx(sl, role, lx2+Inches(0.82), cy2+Inches(0.55), Inches(5.6), Inches(0.36),
+       size=9.5, color=MUTED, wrap=True)
+
+# Right — key files & ownership
+rx3 = Inches(7.1)
+tx(sl, "Key Files & Ownership",
+   rx3, Inches(3.18), Inches(6.0), Inches(0.38),
+   size=13, bold=True, color=WHITE)
+
+files = [
+    ("HomeViewModel.kt",          "AmanDeepSrivastava19", "Voice intent, follow-up state machine",     BLUE),
+    ("TransferViewModel.kt",      "AmanDeepSrivastava19", "Transfer flow, biometric, nav callback",    BLUE),
+    ("TransferScreen.kt",         "AmanDeepSrivastava19", "Fixed mic bar, auto-biometric LaunchedEffect", BLUE),
+    ("HomeScreen.kt",             "AmanDeepSrivastava19", "Fixed bottom mic bar layout",               BLUE),
+    ("MainActivity.kt",           "AmanDeepSrivastava19", "Session timeout, biometric prompt",         BLUE),
+    ("HomeViewModelTest.kt",      "AmanDeepSrivastava19", "55 tests incl. follow-up flows",            TEAL),
+    ("TransferViewModelTest.kt",  "AmanDeepSrivastava19", "320 tests incl. auto-biometric",            TEAL),
+    ("Color.kt / Theme.kt",       "ArundeepKamboj",       "WCAG AAA colour palette",                   ORANGE),
+    ("SaralNavGraph.kt",          "ArundeepKamboj",       "Navigation wiring",                         ORANGE),
+    ("web/app.js",                "AmanDeepSrivastava19", "Web voice AI, all state machines",          BLUE),
+    ("web/index.html",            "AmanDeepSrivastava19", "Mic-bar HTML restructure",                  BLUE),
+    ("web/styles.css",            "AmanDeepSrivastava19", "WCAG design system, mic-bar CSS",           BLUE),
+]
+for i, (fname, owner, desc, clr) in enumerate(files):
+    fy = Inches(3.65) + Inches(0.3)*i
+    fill = NAVY_CARD if i%2==0 else RGBColor(0x10,0x24,0x3C)
+    rect(sl, rx3, fy, Inches(6.1), Inches(0.28), fill=fill)
+    tx(sl, fname, rx3+Inches(0.1),  fy+Inches(0.03), Inches(2.65), Inches(0.24),
+       size=9.5, bold=True, color=WHITE)
+    tx(sl, f"@{owner.split('/')[0]}", rx3+Inches(2.78), fy+Inches(0.03), Inches(1.55), Inches(0.24),
+       size=9, color=clr, italic=True)
+    tx(sl, desc, rx3+Inches(4.35), fy+Inches(0.03), Inches(1.72), Inches(0.24),
+       size=8.5, color=MUTED, wrap=False)
+
+rect(sl, Inches(0.38), Inches(7.12), Inches(12.6), Inches(0.3), fill=DARK)
+tx(sl, "Repository: github.com/esfaihackathon/visual-assistant-ai  •  Branch: main  •  35 commits total",
+   Inches(0.5), Inches(7.14), Inches(12.3), Inches(0.26),
+   size=9.5, color=MUTED, align=PP_ALIGN.CENTER)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SLIDE 7 — REFERENCES (clean, single slide)
 # ─────────────────────────────────────────────────────────────────────────────
 sl = prs.slides.add_slide(BLANK)
 bg(sl)
