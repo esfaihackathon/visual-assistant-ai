@@ -175,16 +175,16 @@ accent_bar(sl)
 # Problem cards — 2×2
 problems = [
     ("👁️", "Visual Barriers",
-     "80M+ visually impaired Indians cannot read standard UI.\nSmall fonts, low contrast, colour-coded status — completely inaccessible.",
+     "~72M Indians live with vision impairment or blindness (IAPB Vision Atlas 2023). Small fonts, low contrast, colour-coded status — completely inaccessible.",
      BLUE),
     ("🤲", "Motor Barriers",
-     "300M+ senior citizens struggle with precise taps on tiny buttons.\nBiometric auth required pressing a small 'Authenticate' button.",
+     "~145M senior citizens today (347M projected by 2050) struggle with precise taps on tiny buttons. Auto-biometric removes the biggest friction point.",
      TEAL),
     ("📖", "Literacy Barriers",
-     "400M+ rural users cannot navigate menu-driven interfaces or read account numbers and transaction text.",
+     "~372M Indians have limited literacy (Census 2011, 74% literacy rate on 1.43B population) — cannot navigate menu-driven interfaces.",
      AMBER),
     ("🎨", "Colour-Blindness",
-     "300M+ colour-blind users cannot interpret red/green status used across virtually every banking app.",
+     "~300M people globally are colour-blind; ~60M in India (~8% of males). Red/green status indicators exclude them entirely.",
      ORANGE),
 ]
 positions = [
@@ -213,7 +213,7 @@ accent_bar(sl)
 # Bar chart
 cd = ChartData()
 cd.categories = ["Visually\nImpaired", "Colour-\nBlind", "Senior\nCitizens (60+)", "Low-\nLiteracy"]
-cd.add_series("Population (Millions)", (80, 300, 300, 400))
+cd.add_series("Population (Millions)", (72, 60, 145, 372))
 
 chart = sl.shapes.add_chart(
     XL_CHART_TYPE.COLUMN_CLUSTERED,
@@ -239,17 +239,17 @@ chart.value_axis.tick_labels.font.color.rgb = MUTED
 
 # Stat panels on the right
 stats = [
-    ("80M+",  "Visually impaired\nIndians",          BLUE),
-    ("300M+", "Colour-blind\nindividuals",             ORANGE),
-    ("300M+", "Senior citizens\n(60+)",               TEAL),
-    ("400M+", "Rural / low-literacy\nusers",          AMBER),
+    ("~72M",  "Visually impaired\nIndians (IAPB 2023)",   BLUE),
+    ("~60M",  "Colour-blind\nin India (~8% males)",      ORANGE),
+    ("145M+", "Senior citizens 60+\n(347M by 2050, UN)", TEAL),
+    ("~372M", "Limited literacy\n(Census 2011, 26%)",    AMBER),
 ]
 for i, (num, lbl, clr) in enumerate(stats):
     sy = Inches(1.82) + Inches(1.18) * i
     stat_block(sl, Inches(6.65), sy, Inches(2.85), Inches(1.08), num, lbl, clr)
 
 # Note
-add_textbox(sl, "Source: Census of India, WHO Vision Report, NCD stats",
+add_textbox(sl, "Sources: IAPB Vision Atlas 2023 · Census of India 2011 · UN World Population Ageing 2023 · Colour Blind Awareness (colourblindawareness.org)  |  See References slide",
             Inches(0.45), Inches(7.0), Inches(8), Inches(0.38),
             font_size=10, color=MUTED, italic=True)
 
@@ -274,7 +274,7 @@ pillars = [
      "88dp minimum tap targets. Large beneficiary cards. Mic button always fixed at the bottom.",
      TEAL),
     ("♿", "WCAG AAA Compliant",
-     "15.8:1 contrast. Colour-blind safe palette. Full ARIA labels. Screen reader compatible.",
+     "18.7:1 contrast (WCAG AAA). Colour-blind safe palette. Full ARIA labels. Screen reader compatible.",
      AMBER),
     ("🔒", "Auto Biometric",
      "Fingerprint scanner activates automatically after transfer confirmation — no button tap needed.",
@@ -429,7 +429,7 @@ for i, pt in enumerate(chart2.plots[0].series[0].points):
 
 # Legend labels
 legends = [
-    ("Contrast  15.8:1", BLUE),
+    ("Contrast  18.7:1", BLUE),
     ("Touch Targets  88dp", TEAL),
     ("Screen Reader  Full ARIA", AMBER),
     ("Colour-Blind Safe  Teal+Orange", ORANGE),
@@ -447,7 +447,7 @@ add_textbox(sl, "Our Implementation vs. Standard Apps",
             tx, Inches(1.82), Inches(5.7), Inches(0.45), font_size=14, bold=True, color=WHITE)
 
 rows_data = [
-    ("Contrast ratio",    "Standard: 4.5:1 (AA)",    "Saral: 15.8:1 (AAA ✓)", TEAL),
+    ("Contrast ratio",    "Standard: 4.5:1 (AA)",    "Saral: 18.7:1 (AAA ✓)", TEAL),
     ("Font size (min)",   "Standard: 12–14sp",        "Saral: 18sp base ✓",    TEAL),
     ("Tap target",        "Standard: 44dp",            "Saral: 88dp (2×) ✓",   TEAL),
     ("Colour dependency", "Standard: Red = error",     "Saral: Shape + icon ✓", TEAL),
@@ -478,8 +478,8 @@ palette = [
     ("#1556B0", RGBColor(0x15,0x56,0xB0), "Button Fill", "Deep Blue",       "7.1:1 contrast on white text"),
     ("#00BFA5", TEAL,                  "Success",     "Teal",               "Deuteranopia-safe ✓"),
     ("#FF6B35", ORANGE,                "Error",       "Deep Orange",        "Protanopia-safe ✓"),
-    ("#FFC107", AMBER,                 "Accent",      "Amber",              "10.9:1 on dark bg (AAA)"),
-    ("#FFFFFF", WHITE,                 "Text Primary","Pure White",          "On navy: 15.8:1 (AAA)"),
+    ("#FFC107", AMBER,                 "Accent",      "Amber",              "11.5:1 on dark bg (AAA)"),
+    ("#FFFFFF", WHITE,                 "Text Primary","Pure White",          "On navy: 18.7:1 (AAA)"),
     ("#B2CCE8", MUTED,                 "Text Muted",  "Cool Blue-grey",     "Secondary info text"),
 ]
 sw2 = Inches(1.52)
@@ -505,11 +505,11 @@ add_rect(sl, Inches(0.4), Inches(5.55), Inches(0.08), Inches(1.72), fill=AMBER)
 add_textbox(sl, "Why Teal + Orange instead of Green + Red?",
             Inches(0.65), Inches(5.65), Inches(12.0), Inches(0.4), font_size=14, bold=True, color=AMBER)
 add_textbox(sl,
-    "Deuteranopia (green-blind, 5% of males): cannot distinguish green from red. "
-    "Teal (#00BFA5) reads clearly as a distinct hue.  |  "
-    "Protanopia (red-blind, 1% of males): cannot see red. "
-    "Deep orange (#FF6B35) is visible across all colour-blindness types.  |  "
-    "Amber (#FFC107) achieves 10.9:1 contrast on the dark navy background — exceeding WCAG AAA.",
+    "Deuteranopia (green-blind, ~4.6% of males — Colour Blind Awareness): cannot distinguish green from red. "
+    "Teal (#00BFA5) reads clearly as a distinct hue to deuteranopes.  |  "
+    "Protanopia (red-blind, ~1% of males): cannot see red hues. "
+    "Deep orange (#FF6B35) is distinguishable across all colour-blindness types.  |  "
+    "Amber (#FFC107) achieves 11.5:1 contrast on navy (WebAIM calculator) — exceeding WCAG AAA (7:1).",
     Inches(0.65), Inches(6.08), Inches(12.0), Inches(1.1),
     font_size=12, color=WHITE, wrap=True)
 
@@ -717,7 +717,7 @@ legend.font.color.rgb = MUTED
 impact_items = [
     ("100%",  "of banking actions operable by voice alone",           BLUE),
     ("100%",  "of screens with fixed mic — always reachable",         TEAL),
-    ("15.8:1","contrast ratio — exceeds WCAG AAA (7:1 minimum)",      AMBER),
+    ("18.7:1","contrast ratio — exceeds WCAG AAA (7:1 minimum)",      AMBER),
     ("88dp",  "minimum tap target — double the Android specification", ORANGE),
     ("0",     "button taps required for fingerprint authentication",   TEAL),
     ("439",   "unit tests passing — zero failures",                   BLUE),
@@ -793,6 +793,77 @@ add_rect(sl, 0, Inches(7.1), W, Inches(0.4), fill=RGBColor(0x04,0x0C,0x18))
 add_textbox(sl, "ESFAI Hackathon 2026  •  Team Saral  •  esfaihackathon@gmail.com",
             Inches(0.3), Inches(7.12), W - Inches(0.6), Inches(0.32),
             font_size=11, color=MUTED, align=PP_ALIGN.CENTER)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SLIDE 14 — REFERENCES
+# ═══════════════════════════════════════════════════════════════════════════════
+sl = prs.slides.add_slide(BLANK)
+navy_bg(sl)
+add_rect(sl, 0, 0, Inches(0.14), H, fill=AMBER)
+section_label(sl, "REFERENCES & DATA SOURCES")
+slide_title(sl, "All data cited — sources and accuracy notes")
+accent_bar(sl)
+
+refs = [
+    # (category_label, category_color, [(citation_text, note)])
+    ("Vision Impairment Data", BLUE, [
+        ("[1] IAPB Vision Atlas 2023 — iapb.org/learn/iapb-vision-atlas",
+         "India: 8.95M blind, 62.7M moderate-severe vision impairment = ~72M total. Used on Slides 2, 3."),
+        ("[2] WHO World Report on Vision, 2019 — WHO/NMH/PBD/19.1",
+         "Global overview of vision impairment burden; India is the country with the highest number of blind people globally."),
+    ]),
+    ("Ageing & Senior Citizens", TEAL, [
+        ("[3] UN World Population Ageing 2023 — un.org/development/desa/pd",
+         "India 60+ population: ~145M current (2023); projected 347M by 2050. Slide 3 uses current figure with projection noted."),
+        ("[4] India Ageing Report 2023 — MoSPI / UNFPA India",
+         "Published by Ministry of Statistics & Programme Implementation; confirms UN projections for India's elderly population trajectory."),
+    ]),
+    ("Colour-Blindness", ORANGE, [
+        ("[5] Colour Blind Awareness — colourblindawareness.org",
+         "~300M people globally are colour-blind; ~8% of males and 0.5% of females affected (all types combined). India ≈ 60M."),
+        ("[6] Deeb, S.S. (2004). The molecular basis of variation in human color vision. Clinical Genetics, 67(5), 369–377.",
+         "Peer-reviewed basis for deuteranopia (~4.63% males) and protanopia (~1.01% males) prevalence figures."),
+    ]),
+    ("Literacy & Rural Access", AMBER, [
+        ("[7] Census of India 2011 — censusindia.gov.in",
+         "Literacy rate 74.04%. Applied to 2023 population (~1.43B) gives ~372M with limited literacy. Used on Slides 2, 3."),
+        ("[8] National Literacy Mission, Govt. of India — nlm.nic.in",
+         "Functional literacy definition and adult literacy programme data."),
+    ]),
+    ("Accessibility Standards", RGBColor(0xAB,0x47,0xBC), [
+        ("[9] W3C WCAG 2.1 Guidelines — w3.org/TR/WCAG21",
+         "SC 1.4.3: AA contrast 4.5:1 normal text. SC 1.4.6: AAA contrast 7:1. SC 1.4.4: text resizable to 200%. Slides 7, 8."),
+        ("[10] WebAIM Contrast Checker — webaim.org/resources/contrastchecker",
+         "Verified contrast ratios: White #FFF on Navy #081320 = 18.7:1 (AAA). Amber #FFC107 on Navy = 11.5:1 (AAA)."),
+        ("[11] Material Design Accessibility — m3.material.io/foundations/accessible-design",
+         "Recommended minimum touch target: 48×48dp. Saral uses 88dp (1.83× the recommendation). Slide 7."),
+    ]),
+]
+
+row_y = Inches(1.82)
+for cat_label, cat_color, items in refs:
+    # Category header
+    add_rect(sl, Inches(0.4), row_y, Inches(12.5), Inches(0.36), fill=RGBColor(0x0A,0x1E,0x34))
+    add_rect(sl, Inches(0.4), row_y, Inches(0.08), Inches(0.36), fill=cat_color)
+    add_textbox(sl, cat_label, Inches(0.6), row_y + Inches(0.04), Inches(12.0), Inches(0.3),
+                font_size=12, bold=True, color=cat_color)
+    row_y += Inches(0.38)
+    for cite, note in items:
+        add_rect(sl, Inches(0.4), row_y, Inches(12.5), Inches(0.54), fill=NAVY_CARD)
+        add_textbox(sl, cite, Inches(0.55), row_y + Inches(0.03), Inches(12.1), Inches(0.25),
+                    font_size=10.5, bold=True, color=WHITE)
+        add_textbox(sl, note, Inches(0.55), row_y + Inches(0.27), Inches(12.1), Inches(0.24),
+                    font_size=9.5, color=MUTED, italic=True, wrap=True)
+        row_y += Inches(0.56)
+    row_y += Inches(0.04)  # gap between categories
+
+# Bottom disclaimer
+add_rect(sl, Inches(0.4), Inches(7.1), Inches(12.5), Inches(0.28), fill=RGBColor(0x04,0x0C,0x18))
+add_textbox(sl,
+    "All population figures are the best publicly available estimates at time of presentation. "
+    "India-specific and global figures are distinguished in slide notes. Contrast ratios computed per WCAG 2.1 relative luminance formula.",
+    Inches(0.5), Inches(7.12), Inches(12.3), Inches(0.24),
+    font_size=9, color=MUTED, italic=True, align=PP_ALIGN.CENTER)
 
 # ── Save ─────────────────────────────────────────────────────────────────────
 out = "/Users/aman/Desktop/esfaihackathon/visual-assistant-ai/presentation/Saral-Accessible-Banking.pptx"
